@@ -135,7 +135,9 @@ button:disabled {
 .board {
   min-height: calc(100dvh - 104px);
   display: grid;
-  grid-template-rows: minmax(380px, 1fr) auto;
+  /* dvh-clamped so zooming in compresses the table instead of forcing the
+     page to scroll; the hand row sizes itself. */
+  grid-template-rows: minmax(min(380px, 46dvh), 1fr) auto;
   gap: 12px;
 }
 
@@ -211,7 +213,6 @@ button:disabled {
   display: grid;
   justify-items: center;
   gap: clamp(0px, 0.8vw, 8px);
-  max-height: clamp(138px, 29dvh, 260px);
   overflow: visible;
   padding-inline: clamp(4px, 1vw, 16px);
 }
@@ -219,7 +220,6 @@ button:disabled {
 .hand-row {
   display: flex;
   max-width: min(100%, 1040px);
-  min-height: clamp(62px, 12vw, 114px);
   align-items: end;
   justify-content: center;
   overflow: visible;

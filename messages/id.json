@@ -129,7 +129,23 @@
     "reversed": "Arah putaran berbalik.",
     "activeColor": "Warna aktif: {color}.",
     "wonRound": "{name} memenangkan ronde dengan {points} poin.",
-    "reshuffled": "Tumpukan buangan dikocok ulang."
+    "reshuffled": "Tumpukan buangan dikocok ulang.",
+    "passedEmpty": "{name} lewat — tidak ada kartu untuk diambil.",
+    "deckExhausted": "Tumpukan kartu habis."
+  },
+  "errors": {
+    "notYourTurn": "Belum giliranmu — tunggu sebentar!",
+    "invalidCard": "Kartu itu tidak bisa dimainkan sekarang.",
+    "drawnCardOnly": "Kamu hanya bisa memainkan kartu yang baru diambil.",
+    "alreadyDrew": "Kamu sudah mengambil kartu giliran ini.",
+    "colorRequired": "Pilih warna untuk kartu Wild dulu.",
+    "cannotCallOne": "Jendela SATU belum/sudah tidak terbuka.",
+    "catchFailed": "Terlambat — dia tidak bisa ditangkap sekarang.",
+    "pendingChallenge": "Selesaikan tantangan Wild +4 dulu.",
+    "emptyDeck": "Tidak ada kartu untuk diambil.",
+    "notHost": "Hanya host yang bisa melakukan itu.",
+    "roomFull": "Ruangan ini penuh.",
+    "gameInProgress": "Ruangan ini sedang bermain."
   },
   "challenge": {
     "title": "Tantangan Wild +4",

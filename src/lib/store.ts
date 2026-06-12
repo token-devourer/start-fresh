@@ -5,22 +5,33 @@ import type { GameSnapshot } from "@congcard/shared";
 import { diffSnapshots, type UiEvent } from "./events";
 import { playUiEventSounds } from "./sound";
 
+export interface RoomError {
+  id: number;
+  message: string;
+  code?: string;
+}
+
 interface RoomStore {
   snapshot: GameSnapshot | null;
   events: UiEvent[];
-  error: string;
+  error: RoomError | null;
+  /** serverNow - Date.now(); add to local time to get server time. */
+  clockOffset: number;
   setSnapshot: (snapshot: GameSnapshot | null) => void;
   dismissEvent: (id: number) => void;
-  setError: (error: string) => void;
+  setError: (message: string, code?: string) => void;
   reset: () => void;
 }
 
 const MAX_VISIBLE_EVENTS = 4;
 
+let nextErrorId = 0;
+
 export const useRoomStore = create<RoomStore>((set, get) => ({
   snapshot: null,
   events: [],
-  error: "",
+  error: null,
+  clockOffset: 0,
   setSnapshot: (snapshot) => {
     if (!snapshot) {
       set({ snapshot: null });
@@ -31,10 +42,19 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     playUiEventSounds(fresh);
     set((state) => ({
       snapshot,
+      clockOffset: typeof snapshot.serverNow === "number" ? snapshot.serverNow - Date.now() : state.clockOffset,
       events: [...state.events, ...fresh].slice(-MAX_VISIBLE_EVENTS)
     }));
   },
   dismissEvent: (id) => set((state) => ({ events: state.events.filter((event) => event.id !== id) })),
-  setError: (error) => set({ error }),
-  reset: () => set({ snapshot: null, events: [], error: "" })
+  setError: (message, code) => {
+    if (!message) {
+      set({ error: null });
+      return;
+    }
+
+    nextErrorId += 1;
+    set({ error: { id: nextErrorId, message, ...(code ? { code } : {}) } });
+  },
+  reset: () => set({ snapshot: null, events: [], error: null, clockOffset: 0 })
 }));
