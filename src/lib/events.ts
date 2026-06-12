@@ -1,0 +1,105 @@
+import type { Color, GameSnapshot } from "@kartu-satu/shared";
+
+export type UiEvent =
+  | { id: number; type: "yourTurn" }
+  | { id: number; type: "penalty"; playerId: string; nickname: string; count: number; self: boolean }
+  | { id: number; type: "skip" }
+  | { id: number; type: "reverse"; direction: 1 | -1 }
+  | { id: number; type: "colorChange"; color: Color }
+  | { id: number; type: "calledOne"; nickname: string }
+  | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean };
+
+let nextEventId = 1;
+
+function eventId(): number {
+  nextEventId += 1;
+  return nextEventId;
+}
+
+export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): UiEvent[] {
+  const selfId = next.self?.id ?? prev?.self?.id;
+  const events: UiEvent[] = [];
+
+  if (!prev || prev.code !== next.code) {
+    return events;
+  }
+
+  const becameMyTurn =
+    Boolean(selfId) &&
+    next.phase === "playing" &&
+    !next.pendingChallenge &&
+    next.currentPlayerId === selfId &&
+    (prev.currentPlayerId !== selfId || prev.phase !== "playing" || Boolean(prev.pendingChallenge));
+
+  // A new round deals 7 cards to everyone — skip per-card diffs to avoid
+  // spurious penalty popups, but still announce the opening turn.
+  if (prev.roundNumber !== next.roundNumber || prev.phase !== "playing" || next.phase !== "playing") {
+    if (becameMyTurn) {
+      events.push({ id: eventId(), type: "yourTurn" });
+    }
+
+    return events;
+  }
+
+  for (const player of next.players) {
+    const before = prev.players.find((item) => item.id === player.id);
+    if (!before) {
+      continue;
+    }
+
+    const gained = player.cardCount - before.cardCount;
+    if (gained >= 2) {
+      events.push({
+        id: eventId(),
+        type: "penalty",
+        playerId: player.id,
+        nickname: player.nickname,
+        count: gained,
+        self: player.id === selfId
+      });
+    }
+
+    // cardCount === 1 distinguishes a real call from catchOne, which also
+    // flips calledOne after dealing the 2-card penalty.
+    if (!before.calledOne && player.calledOne && player.cardCount === 1) {
+      events.push({ id: eventId(), type: "calledOne", nickname: player.nickname });
+    }
+  }
+
+  const topChanged = Boolean(next.discardTop) && next.discardTop?.id !== prev.discardTop?.id;
+
+  if (topChanged && next.discardTop?.value === "skip") {
+    events.push({ id: eventId(), type: "skip" });
+  }
+
+  if (next.direction !== prev.direction) {
+    events.push({ id: eventId(), type: "reverse", direction: next.direction });
+  }
+
+  if (
+    topChanged &&
+    (next.discardTop?.value === "wild" || next.discardTop?.value === "wild4") &&
+    next.activeColor
+  ) {
+    events.push({ id: eventId(), type: "colorChange", color: next.activeColor });
+  }
+
+  if (next.oneWindow && next.oneWindow.playerId !== prev.oneWindow?.playerId) {
+    const target = next.players.find((item) => item.id === next.oneWindow?.playerId);
+    if (target) {
+      events.push({
+        id: eventId(),
+        type: "catchWindow",
+        playerId: target.id,
+        nickname: target.nickname,
+        self: target.id === selfId
+      });
+    }
+  }
+
+  if (becameMyTurn) {
+    events.push({ id: eventId(), type: "yourTurn" });
+  }
+
+  return events;
+}

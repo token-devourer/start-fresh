@@ -1,15 +1,30 @@
 "use client";
 
-import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
-import type { Card, Color, GameSnapshot, PublicPlayer, RoomSettings } from "@kartu-satu/shared";
-import { AVATARS, COLORS } from "@kartu-satu/shared";
+import type { Card, Color, GameSnapshot, RoomSettings } from "@kartu-satu/shared";
+import { AVATARS } from "@kartu-satu/shared";
+import { anchorRef } from "@/lib/anchors";
 import { resolveRoom } from "@/lib/api";
+import { Avatar } from "./Avatar";
+import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
+import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { canPlayCard, needsColor } from "@/lib/rules";
 import { useRoomStore } from "@/lib/store";
-import { CardView } from "./CardView";
+import { ChallengeModal } from "./ChallengeModal";
+import { ColorPicker } from "./ColorPicker";
+import { FlightLayer } from "./FlightLayer";
+import { GameEventOverlay } from "./GameEventOverlay";
+import { Hand } from "./Hand";
+import { LanguageToggle } from "./LanguageToggle";
+import { RoundEndOverlay } from "./RoundEndOverlay";
+import { RoundTable } from "./RoundTable";
+import { TurnBanner } from "./TurnBanner";
+import { UnoButton } from "./UnoButton";
 
 interface RoomClientProps {
   code: string;
@@ -18,6 +33,7 @@ interface RoomClientProps {
 type ConnectionStatus = "idle" | "connecting" | "connected" | "closed";
 
 export function RoomClient({ code }: RoomClientProps) {
+  const t = useTranslations();
   const searchParams = useSearchParams();
   const roomIdFromUrl = searchParams.get("roomId");
   const roomRef = useRef<Room | null>(null);
@@ -87,19 +103,19 @@ export function RoomClient({ code }: RoomClientProps) {
         setSnapshot(nextSnapshot);
       });
       room.onMessage("error", (payload: { message?: string }) => {
-        setError(payload.message ?? "Action failed.");
+        setError(payload.message ?? t("common.actionFailed"));
       });
       room.onLeave(() => {
         setStatus("closed");
         roomRef.current = null;
       });
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "Connection failed.");
+      setError(caught instanceof Error ? caught.message : t("landing.connectionFailed"));
       setStatus("closed");
     } finally {
       connectingRef.current = false;
     }
-  }, [avatarId, code, nickname, roomIdFromUrl, setError, setSnapshot]);
+  }, [avatarId, code, nickname, roomIdFromUrl, setError, setSnapshot, t]);
 
   useEffect(() => {
     if (profileReady && nickname.trim()) {
@@ -124,23 +140,30 @@ export function RoomClient({ code }: RoomClientProps) {
   if (!nickname.trim()) {
     return (
       <main className="app-shell grid min-h-screen place-items-center py-8">
-        <form className="panel grid w-full max-w-md gap-4 p-5" onSubmit={submitProfile}>
+        <motion.form
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="panel grid w-full max-w-md gap-4 p-5"
+          onSubmit={submitProfile}
+        >
           <div>
-            <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--gold)]">Room {code}</p>
-            <h1 className="mt-2 text-2xl font-black">Choose your seat name</h1>
+            <p className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]">
+              {t("room.title", { code })}
+            </p>
+            <h1 className="display mt-2 text-2xl font-black">{t("room.chooseSeatName")}</h1>
           </div>
-          <input className="field" value={nickname} onChange={(event) => setNickname(event.target.value)} maxLength={20} placeholder="Nickname" />
-          <select className="field" value={avatarId} onChange={(event) => setAvatarId(event.target.value as (typeof AVATARS)[number])}>
-            {AVATARS.map((avatar) => (
-              <option key={avatar} value={avatar}>
-                {avatar}
-              </option>
-            ))}
-          </select>
+          <input
+            className="field"
+            value={nickname}
+            onChange={(event) => setNickname(event.target.value)}
+            maxLength={20}
+            placeholder={t("landing.nicknamePlaceholder")}
+          />
+          <AvatarGrid value={avatarId} onChange={setAvatarId} />
           <button className="button" disabled={!nickname.trim() || status === "connecting"}>
-            Join room
+            {t("room.join")}
           </button>
-        </form>
+        </motion.form>
       </main>
     );
   }
@@ -149,23 +172,46 @@ export function RoomClient({ code }: RoomClientProps) {
     <main className="app-shell py-3 md:py-5">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--gold)]">Kartu Satu</p>
-          <h1 className="text-2xl font-black">Room {code}</h1>
+          <p className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]">{t("common.appName")}</p>
+          <h1 className="display text-2xl font-black">{t("room.title", { code })}</h1>
         </div>
         <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
-          <span className="rounded-full border border-[var(--line)] px-3 py-1">{status}</span>
+          <span
+            className={`flex items-center gap-1.5 rounded-full border border-[var(--line)] px-3 py-1 ${
+              status === "closed" ? "text-red-300" : ""
+            }`}
+          >
+            <span
+              className={`h-2 w-2 rounded-full ${
+                status === "connected" ? "bg-green-400" : status === "connecting" ? "animate-pulse bg-[var(--gold)]" : "bg-red-400"
+              }`}
+            />
+            {t(`room.status.${status}`)}
+          </span>
+          <LanguageToggle />
           <a className="rounded-full border border-[var(--line)] px-3 py-1 text-[var(--text)]" href="/rules">
-            Rules
+            {t("room.rules")}
           </a>
         </div>
       </header>
 
-      {error ? <div className="mb-3 rounded-lg border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100">{error}</div> : null}
+      <AnimatePresence>
+        {error ? (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-3 rounded-lg border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100"
+          >
+            {error}
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
 
       {!snapshot ? (
-        <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">Connecting to room...</div>
+        <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
       ) : snapshot.phase === "lobby" ? (
-        <Lobby snapshot={snapshot} send={send} />
+        <Lobby snapshot={snapshot} code={code} send={send} />
       ) : (
         <Board snapshot={snapshot} send={send} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
       )}
@@ -173,49 +219,103 @@ export function RoomClient({ code }: RoomClientProps) {
   );
 }
 
-function Lobby({ snapshot, send }: { snapshot: GameSnapshot; send: (type: string, payload?: unknown) => void }) {
+function Lobby({
+  snapshot,
+  code,
+  send
+}: {
+  snapshot: GameSnapshot;
+  code: string;
+  send: (type: string, payload?: unknown) => void;
+}) {
+  const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
   const isHost = Boolean(me?.isHost);
+  const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   function updateSetting(input: Partial<RoomSettings>) {
     send("room.updateSettings", input);
   }
 
+  async function copy(kind: "code" | "link") {
+    const value = kind === "code" ? code : window.location.href;
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(kind);
+      window.setTimeout(() => setCopied(null), 1500);
+    } catch {
+      // clipboard unavailable (insecure context) — ignore
+    }
+  }
+
   return (
     <section className="grid gap-4 md:grid-cols-[1fr_320px]">
       <div className="panel p-4">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-black">Players</h2>
-          <button className="button secondary" onClick={() => send("room.ready", { ready: !me?.ready })}>
-            {me?.ready ? "Set not ready" : "Ready"}
-          </button>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h2 className="display text-xl font-black">{t("lobby.players")}</h2>
+          <div className="flex flex-wrap gap-2">
+            <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("code")}>
+              {copied === "code" ? t("lobby.copied") : `📋 ${t("lobby.copyCode")}`}
+            </button>
+            <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("link")}>
+              {copied === "link" ? t("lobby.copied") : `🔗 ${t("lobby.copyLink")}`}
+            </button>
+            <button className="button !min-h-9 !px-3 text-sm" onClick={() => send("room.ready", { ready: !me?.ready })}>
+              {me?.ready ? t("lobby.notReady") : t("lobby.ready")}
+            </button>
+          </div>
         </div>
         <div className="grid gap-3">
-          {snapshot.players.map((player) => (
-            <div key={player.id} className="flex items-center justify-between gap-3 rounded-lg border border-[var(--line)] bg-black/20 p-3">
-              <div>
-                <div className="font-bold">
-                  {player.nickname} {player.isHost ? "(host)" : ""}
+          <AnimatePresence initial={false}>
+            {snapshot.players.map((player) => (
+              <motion.div
+                key={player.id}
+                layout
+                initial={{ opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 16 }}
+                className="flex items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3"
+              >
+                <div className="flex min-w-0 items-center gap-3">
+                  <Avatar avatarId={player.avatarId} size={44} className="flex-shrink-0" />
+                  <div className="min-w-0">
+                    <div className="truncate font-black">
+                      {player.isHost ? "👑 " : ""}
+                      {player.nickname}
+                      {player.id === snapshot.self?.id ? <span className="text-[var(--gold)]"> ★</span> : null}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
+                      <span className={player.ready ? "font-bold text-green-300" : ""}>
+                        {player.ready ? `✓ ${t("lobby.statusReady")}` : t("lobby.statusWaiting")}
+                      </span>
+                      <span>·</span>
+                      <span className={player.connected ? "" : "text-red-300"}>
+                        {player.connected ? t("lobby.online") : t("lobby.offline")}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-sm text-[var(--muted)]">
-                  {player.avatarId} · {player.ready ? "ready" : "waiting"} · {player.connected ? "online" : "offline"}
-                </div>
-              </div>
-              {isHost && !player.isHost ? (
-                <button className="button danger" onClick={() => send("room.kick", { playerId: player.id })}>
-                  Kick
-                </button>
-              ) : null}
-            </div>
-          ))}
+                {isHost && !player.isHost ? (
+                  <button className="button danger !min-h-9 !px-3 text-sm" onClick={() => send("room.kick", { playerId: player.id })}>
+                    {t("lobby.kick")}
+                  </button>
+                ) : null}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
       </div>
 
       <aside className="panel grid content-start gap-4 p-4">
-        <h2 className="text-xl font-black">Room settings</h2>
+        <h2 className="display text-xl font-black">{t("lobby.settings")}</h2>
         <label className="grid gap-2">
-          <span className="text-sm font-bold text-[var(--muted)]">Max players</span>
-          <select className="field" disabled={!isHost} value={snapshot.settings.maxPlayers} onChange={(event) => updateSetting({ maxPlayers: Number(event.target.value) })}>
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.maxPlayers")}</span>
+          <select
+            className="field"
+            disabled={!isHost}
+            value={snapshot.settings.maxPlayers}
+            onChange={(event) => updateSetting({ maxPlayers: Number(event.target.value) })}
+          >
             {Array.from({ length: 9 }, (_, index) => index + 2).map((value) => (
               <option key={value} value={value}>
                 {value}
@@ -224,25 +324,39 @@ function Lobby({ snapshot, send }: { snapshot: GameSnapshot; send: (type: string
           </select>
         </label>
         <label className="grid gap-2">
-          <span className="text-sm font-bold text-[var(--muted)]">Turn timer</span>
-          <select className="field" disabled={!isHost} value={snapshot.settings.turnTimeoutSec} onChange={(event) => updateSetting({ turnTimeoutSec: Number(event.target.value) })}>
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.turnTimer")}</span>
+          <select
+            className="field"
+            disabled={!isHost}
+            value={snapshot.settings.turnTimeoutSec}
+            onChange={(event) => updateSetting({ turnTimeoutSec: Number(event.target.value) })}
+          >
             {[15, 30, 45, 60].map((value) => (
               <option key={value} value={value}>
-                {value} seconds
+                {t("lobby.seconds", { value })}
               </option>
             ))}
           </select>
         </label>
         <label className="grid gap-2">
-          <span className="text-sm font-bold text-[var(--muted)]">Score target</span>
-          <select className="field" disabled={!isHost} value={snapshot.settings.scoreTarget} onChange={(event) => updateSetting({ scoreTarget: Number(event.target.value) as RoomSettings["scoreTarget"] })}>
-            <option value={0}>One round</option>
-            <option value={500}>500 points</option>
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.scoreTarget")}</span>
+          <select
+            className="field"
+            disabled={!isHost}
+            value={snapshot.settings.scoreTarget}
+            onChange={(event) => updateSetting({ scoreTarget: Number(event.target.value) as RoomSettings["scoreTarget"] })}
+          >
+            <option value={0}>{t("lobby.oneRound")}</option>
+            <option value={500}>{t("lobby.points500")}</option>
           </select>
         </label>
-        <button className="button" disabled={!isHost || snapshot.players.length < 2} onClick={() => send("game.start")}>
-          Start game
-        </button>
+        {isHost ? (
+          <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
+            {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
+          </button>
+        ) : (
+          <p className="text-center text-sm text-[var(--muted)]">{t("lobby.waitingHost")}</p>
+        )}
       </aside>
     </section>
   );
@@ -259,14 +373,15 @@ function Board({
   selectedCard: Card | null;
   setSelectedCard: (card: Card | null) => void;
 }) {
+  const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
-  const opponents = snapshot.players.filter((player) => player.id !== snapshot.self?.id);
-  const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
-  const challengeForMe = snapshot.pendingChallenge?.challengerId === snapshot.self?.id;
-  const oneTarget = snapshot.oneWindow ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId) : undefined;
-  const isMyTurn = snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+  const isMyTurn = snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const canCallOne = snapshot.self?.hand.length === 1 && !me?.calledOne;
-  const drawnCard = snapshot.self?.hand.find((card) => card.id === snapshot.self?.drawnCardId);
+  const canDraw = isMyTurn && !snapshot.self?.drawnCardId;
+  const oneTarget =
+    snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+      ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId)
+      : undefined;
 
   function play(card: Card) {
     if (!canPlayCard(snapshot, card)) {
@@ -291,199 +406,79 @@ function Board({
   }
 
   return (
-    <section className="board">
-      <div className="grid gap-3 md:grid-cols-[1fr_260px]">
-        <div className="flex flex-wrap justify-center gap-2">
-          {opponents.map((player) => (
-            <PlayerSeat key={player.id} player={player} active={player.id === snapshot.currentPlayerId} oneOpen={snapshot.oneWindow?.playerId === player.id} onCatch={() => send("game.catchOne", { targetId: player.id })} />
-          ))}
+    <>
+      <section className="board">
+        <div className="relative">
+          <RoundTable
+            snapshot={snapshot}
+            isMyTurn={isMyTurn}
+            canDraw={canDraw}
+            onDraw={() => send("game.drawCard")}
+            onCatch={(targetId) => send("game.catchOne", { targetId })}
+          />
+          <LogTicker snapshot={snapshot} />
         </div>
-        <ActionLog snapshot={snapshot} />
-      </div>
 
-      <div className="panel grid place-items-center p-4">
-        <div className="grid w-full max-w-3xl gap-4 md:grid-cols-[1fr_auto_1fr] md:items-center">
-          <div className="text-center md:text-right">
-            <div className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Turn</div>
-            <div className="mt-1 text-2xl font-black">{activePlayer?.nickname ?? "Waiting"}</div>
-            <Timer deadline={snapshot.turnDeadline} />
+        <div
+          ref={anchorRef("hand")}
+          className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
+        >
+          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
+            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
+            <span className="text-xs font-bold text-[var(--muted)]">
+              {t("board.cards", { count: snapshot.self?.hand.length ?? 0 })} · {t("board.points", { score: me?.score ?? 0 })}
+            </span>
           </div>
-
-          <div className="flex items-center justify-center gap-4">
-            <button className="grid gap-2 text-center" disabled={!isMyTurn} onClick={() => send("game.drawCard")} aria-label="Draw card">
-              <CardView hidden />
-              <span className="button secondary">Draw</span>
-            </button>
-            <div className="grid gap-2 text-center">
-              <CardView card={snapshot.discardTop} />
-              <span className={`rounded-full px-3 py-1 text-sm font-black card-${snapshot.activeColor ?? "wild"}`}>Active {snapshot.activeColor ?? "wild"}</span>
-            </div>
-          </div>
-
-          <div className="text-center md:text-left">
-            <div className="text-sm font-bold uppercase tracking-[0.18em] text-[var(--muted)]">Direction</div>
-            <div className="mt-1 text-2xl font-black">{snapshot.direction === 1 ? "Clockwise" : "Counterclockwise"}</div>
-            <div className="text-sm text-[var(--muted)]">{snapshot.drawPileCount} cards in draw pile</div>
-          </div>
+          <Hand
+            snapshot={snapshot}
+            isMyTurn={isMyTurn}
+            onPlay={play}
+            onPassDrawn={() => send("game.playDrawn", { play: false })}
+          />
         </div>
-      </div>
+      </section>
 
-      <div className="grid gap-3">
-        {challengeForMe ? (
-          <div className="panel flex flex-wrap items-center justify-between gap-3 p-3">
-            <span className="font-bold">Wild Draw Four challenge</span>
-            <div className="flex gap-2">
-              <button className="button secondary" onClick={() => send("game.challenge", { accept: false })}>
-                Take four
-              </button>
-              <button className="button" onClick={() => send("game.challenge", { accept: true })}>
-                Challenge
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {snapshot.phase === "roundEnd" || snapshot.phase === "gameEnd" ? <RoundPanel snapshot={snapshot} send={send} /> : null}
-
-        <div className="panel p-3">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-            <PlayerSeat player={me} active={isMyTurn} oneOpen={snapshot.oneWindow?.playerId === me?.id} />
-            <div className="flex flex-wrap gap-2">
-              {canCallOne ? (
-                <button className="button" onClick={() => send("game.callOne")}>
-                  One!
-                </button>
-              ) : null}
-              {oneTarget && oneTarget.id !== me?.id ? (
-                <button className="button danger" onClick={() => send("game.catchOne", { targetId: oneTarget.id })}>
-                  Catch {oneTarget.nickname}
-                </button>
-              ) : null}
-              {drawnCard ? (
-                <button className="button secondary" onClick={() => send("game.playDrawn", { play: false })}>
-                  Pass drawn card
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          <div className="flex min-h-[112px] gap-2 overflow-x-auto px-2 py-3">
-            {snapshot.self?.hand.map((card) => {
-              const playable = canPlayCard(snapshot, card);
-              return <CardView key={card.id} card={card} playable={playable} disabled={!playable} onClick={() => play(card)} />;
-            })}
-          </div>
-        </div>
-      </div>
-
-      {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
-    </section>
+      <FlightLayer />
+      <TurnBanner isMyTurn={isMyTurn} />
+      <GameEventOverlay />
+      <ChallengeModal snapshot={snapshot} send={send} />
+      <RoundEndOverlay snapshot={snapshot} send={send} />
+      <UnoButton
+        canCallOne={Boolean(canCallOne)}
+        onCallOne={() => send("game.callOne")}
+        catchTarget={
+          oneTarget && snapshot.oneWindow
+            ? { id: oneTarget.id, nickname: oneTarget.nickname, deadline: snapshot.oneWindow.deadline }
+            : undefined
+        }
+        onCatch={(targetId) => send("game.catchOne", { targetId })}
+      />
+      <AnimatePresence>
+        {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
+      </AnimatePresence>
+    </>
   );
 }
 
-function PlayerSeat({
-  player,
-  active,
-  oneOpen,
-  onCatch
-}: {
-  player?: PublicPlayer;
-  active?: boolean;
-  oneOpen?: boolean;
-  onCatch?: () => void;
-}) {
-  if (!player) {
-    return null;
-  }
+function LogTicker({ snapshot }: { snapshot: GameSnapshot }) {
+  const t = useTranslations();
+  const entries = snapshot.actionLog.slice(-5);
 
   return (
-    <div className={`seat ${active ? "active" : ""}`}>
-      <div className="flex items-center justify-between gap-2">
-        <div className="font-black">{player.nickname}</div>
-        <div className="rounded-full bg-black/30 px-2 py-1 text-xs font-bold">{player.avatarId}</div>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-sm text-[var(--muted)]">
-        <span>{player.cardCount} cards</span>
-        <span>{player.score} pts</span>
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2 text-xs">
-        <span className={player.connected ? "text-green-200" : "text-red-200"}>{player.connected ? "online" : "offline"}</span>
-        {oneOpen && onCatch ? (
-          <button className="rounded bg-[var(--red)] px-2 py-1 font-bold text-white" onClick={onCatch}>
-            Catch
-          </button>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function ActionLog({ snapshot }: { snapshot: GameSnapshot }) {
-  return (
-    <aside className="panel hidden max-h-48 overflow-auto p-3 md:block">
-      <h2 className="mb-2 text-sm font-black uppercase tracking-[0.16em] text-[var(--muted)]">Log</h2>
-      <div className="grid gap-2 text-sm">
-        {snapshot.actionLog.slice(-8).map((entry) => (
-          <div key={entry.seq} className="rounded border border-[var(--line)] bg-black/20 p-2">
-            {entry.message}
+    <aside className="absolute left-1 top-1 z-20 hidden w-60 rounded-xl bg-black/45 p-2.5 backdrop-blur-sm md:block">
+      <h2 className="mb-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.log")}</h2>
+      <div className="grid gap-1 text-xs leading-snug">
+        {entries.map((entry, index) => (
+          <div
+            key={entry.seq}
+            className="flex items-start gap-1.5"
+            style={{ opacity: 0.45 + 0.55 * ((index + 1) / entries.length) }}
+          >
+            <span aria-hidden="true">{LOG_ICON[entry.type] ?? "•"}</span>
+            <span className="min-w-0 flex-1">{translateLog(entry.message, t as Translate)}</span>
           </div>
         ))}
       </div>
     </aside>
-  );
-}
-
-function Timer({ deadline }: { deadline?: number }) {
-  const [now, setNow] = useState(Date.now());
-
-  useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 250);
-    return () => window.clearInterval(id);
-  }, []);
-
-  if (!deadline) {
-    return <div className="text-sm text-[var(--muted)]">No timer</div>;
-  }
-
-  const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
-  return <div className="text-sm text-[var(--muted)]">{seconds}s left</div>;
-}
-
-function ColorPicker({ onPick, onCancel }: { onPick: (color: Color) => void; onCancel: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 grid place-items-center bg-black/72 p-4">
-      <div className="panel grid w-full max-w-sm gap-4 p-5">
-        <h2 className="text-xl font-black">Choose a color</h2>
-        <div className="grid grid-cols-2 gap-3">
-          {COLORS.map((color) => (
-            <button key={color} className={`button card-${color}`} onClick={() => onPick(color)}>
-              {color}
-            </button>
-          ))}
-        </div>
-        <button className="button secondary" onClick={onCancel}>
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function RoundPanel({ snapshot, send }: { snapshot: GameSnapshot; send: (type: string, payload?: unknown) => void }) {
-  const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
-  const winner = snapshot.players.find((player) => player.id === (snapshot.gameWinnerId ?? snapshot.roundWinnerId));
-
-  return (
-    <div className="panel flex flex-wrap items-center justify-between gap-3 p-3">
-      <div>
-        <div className="font-black">{snapshot.phase === "gameEnd" ? "Game finished" : "Round finished"}</div>
-        <div className="text-sm text-[var(--muted)]">{winner ? `${winner.nickname} won.` : "Waiting for next round."}</div>
-      </div>
-      {snapshot.phase === "roundEnd" && me?.isHost ? (
-        <button className="button" onClick={() => send("game.start")}>
-          Start next round
-        </button>
-      ) : null}
-    </div>
   );
 }

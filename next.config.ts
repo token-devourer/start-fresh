@@ -1,6 +1,7 @@
 import type { NextConfig } from "next";
 import { createRequire } from "node:module";
 import path from "node:path";
+import createNextIntlPlugin from "next-intl/plugin";
 
 const require = createRequire(import.meta.url);
 const nextPackageDir = path.dirname(require.resolve("next/package.json"));
@@ -13,4 +14,6 @@ const nextConfig: NextConfig = {
   transpilePackages: ["@kartu-satu/shared"]
 };
 
-export default nextConfig;
+const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
+
+export default withNextIntl(nextConfig);
