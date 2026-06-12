@@ -1,4 +1,4 @@
-import type { Card, Color } from "@congkak-game/shared";
+import type { Card, Color } from "@congcard/shared";
 import { cardText } from "@/lib/rules";
 
 interface CardViewProps {
@@ -16,7 +16,7 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
     return (
       <div className={`${small ? "card-face small" : "card-face"} card-back grid place-items-center`} aria-label="Hidden card">
         <div className="relative z-10 grid h-10 w-10 place-items-center rounded-full border-2 border-[var(--gold)]/70 text-center text-xs font-black uppercase tracking-[0.14em] text-[var(--gold)]">
-          CG
+          CC
         </div>
       </div>
     );

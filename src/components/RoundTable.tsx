@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot, PublicPlayer } from "@congkak-game/shared";
+import type { GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
@@ -25,7 +25,7 @@ interface RoundTableProps {
 }
 
 // Seats sit on an ellipse: you at six o'clock, then ascending seat order
-// clockwise — so direction === 1 visually travels clockwise around the table.
+// clockwise, so direction === 1 visually travels clockwise around the table.
 function seatPosition(index: number, total: number): { left: string; top: string } {
   const theta = (Math.PI / 180) * (90 + (index * 360) / total);
   return {
@@ -44,6 +44,11 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw, onCatch }: Rou
   const ordered = sorted.map((_, index) => sorted[(selfIndex + index) % sorted.length]);
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
+  const now = useNow(100);
+  const oneReady =
+    Boolean(snapshot.oneWindow) &&
+    now >= (snapshot.oneWindow?.opensAt ?? 0) &&
+    now <= (snapshot.oneWindow?.deadline ?? 0);
 
   return (
     <div className="relative h-full min-h-[420px] md:min-h-[460px]">
@@ -63,7 +68,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw, onCatch }: Rou
             player={player}
             active={player.id === snapshot.currentPlayerId}
             isSelf={player.id === snapshot.self?.id}
-            oneOpen={snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
+            oneOpen={oneReady && snapshot.oneWindow?.playerId === player.id && player.id !== snapshot.self?.id}
             turnDeadline={snapshot.turnDeadline}
             turnTimeoutSec={snapshot.settings.turnTimeoutSec}
             onCatch={() => onCatch(player.id)}

@@ -2,8 +2,8 @@
 
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { Color } from "@congkak-game/shared";
-import { COLORS } from "@congkak-game/shared";
+import type { Color } from "@congcard/shared";
+import { COLORS } from "@congcard/shared";
 
 interface ColorPickerProps {
   onPick: (color: Color) => void;

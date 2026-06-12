@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
-import type { Card, GameSnapshot, PublicPlayer } from "@congkak-game/shared";
+import type { Card, GameSnapshot, PublicPlayer } from "@congcard/shared";
 import { diffSnapshots } from "../src/lib/events";
+import { soundForEvent } from "../src/lib/sound";
 
 function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer {
   return {
@@ -101,7 +102,7 @@ describe("diffSnapshots", () => {
     });
     expect(diffSnapshots(prev, called).map((event) => event.type)).toContain("calledOne");
 
-    // catchOne deals 2 penalty cards and then sets calledOne — no celebration.
+    // catchOne deals 2 penalty cards and then sets calledOne, so no celebration.
     const caught = snapshot({
       players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1, calledOne: true, cardCount: 3 })]
     });
@@ -120,11 +121,28 @@ describe("diffSnapshots", () => {
 
   it("detects an opened catch window", () => {
     const prev = snapshot({});
-    const next = snapshot({ oneWindow: { playerId: "b", deadline: 123 } });
+    const next = snapshot({ oneWindow: { playerId: "b", opensAt: 100, deadline: 123 } });
 
     expect(diffSnapshots(prev, next).find((event) => event.type === "catchWindow")).toMatchObject({
       playerId: "b",
-      self: false
+      self: false,
+      opensAt: 100,
+      deadline: 123
     });
+  });
+
+  it("maps awareness events to sounds", () => {
+    expect(soundForEvent({ id: 1, type: "yourTurn" })).toBe("turn");
+    expect(
+      soundForEvent({ id: 2, type: "catchWindow", playerId: "a", nickname: "Ava", self: true, opensAt: 10, deadline: 20 })
+    ).toBe("oneWindow");
+    expect(
+      soundForEvent({ id: 3, type: "catchWindow", playerId: "b", nickname: "Ben", self: false, opensAt: 10, deadline: 20 })
+    ).toBe("catch");
+    expect(soundForEvent({ id: 4, type: "colorChange", color: "blue" })).toBe("wild");
+    expect(soundForEvent({ id: 5, type: "calledOne", nickname: "Ava" })).toBe("oneCalled");
+    expect(soundForEvent({ id: 6, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
+    expect(soundForEvent({ id: 7, type: "skip" })).toBe("skip");
+    expect(soundForEvent({ id: 8, type: "reverse", direction: -1 })).toBe("reverse");
   });
 });

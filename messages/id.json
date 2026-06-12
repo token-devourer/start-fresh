@@ -1,9 +1,11 @@
 {
   "common": {
-    "appName": "Congkak Game",
+    "appName": "CongCard",
     "cancel": "Batal",
     "close": "Tutup",
-    "actionFailed": "Aksi gagal."
+    "actionFailed": "Aksi gagal.",
+    "soundOn": "Suara aktif",
+    "soundOff": "Senyap"
   },
   "colors": {
     "red": "Merah",
@@ -75,11 +77,12 @@
     "points": "{score} poin",
     "log": "Log aksi",
     "yourHand": "Kartumu",
-    "drawnBadge": "Baru",
+    "drawnBadge": "Kartu baru",
     "playDrawn": "Mainkan kartu baru",
     "passDrawn": "Lewati",
     "one": "SATU!",
     "catch": "Tangkap {name}!",
+    "readyIn": "Siap dalam {seconds} dtk",
     "hiddenCard": "Kartu tertutup",
     "playCard": "Mainkan {card}"
   },
@@ -92,7 +95,7 @@
     "colorChange": "Warna jadi {color}",
     "calledOne": "{name}: SATU!",
     "catchWindow": "{name} tinggal 1 kartu!",
-    "youHaveOne": "Kartumu tinggal 1 — teriak SATU!"
+    "youHaveOne": "Kartumu tinggal 1 - teriak SATU!"
   },
   "log": {
     "joined": "{name} bergabung.",
@@ -152,7 +155,7 @@
   },
   "rules": {
     "tagline": "Aturan",
-    "title": "Cara bermain Congkak Game",
+    "title": "Cara bermain CongCard",
     "back": "Kembali",
     "goalTitle": "Tujuan",
     "goalBody": "Habiskan kartumu lebih dulu. Pemenang ronde mendapat poin dari kartu yang tersisa di tangan semua lawan.",

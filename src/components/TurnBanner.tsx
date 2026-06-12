@@ -21,7 +21,7 @@ export function TurnBanner({ isMyTurn }: { isMyTurn: boolean }) {
   }, [turnEvent, dismissEvent]);
 
   useEffect(() => {
-    document.title = isMyTurn ? `🔔 ${t("events.yourTurn")} — ${t("common.appName")}` : t("common.appName");
+    document.title = isMyTurn ? `${t("events.yourTurn")} - ${t("common.appName")}` : t("common.appName");
     return () => {
       document.title = t("common.appName");
     };

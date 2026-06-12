@@ -1,6 +1,6 @@
-# Congkak Game Frontend
+# CongCard Frontend
 
-Next.js frontend for Congkak Game, a private-room multiplayer card game.
+Next.js frontend for CongCard, a private-room multiplayer card game.
 
 ## Local Development
 

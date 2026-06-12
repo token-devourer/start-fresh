@@ -207,6 +207,24 @@ button:disabled {
   background: transparent;
 }
 
+.hand-stack {
+  display: grid;
+  justify-items: center;
+  gap: clamp(0px, 0.8vw, 8px);
+  max-height: clamp(138px, 29dvh, 260px);
+  overflow: visible;
+  padding-inline: clamp(4px, 1vw, 16px);
+}
+
+.hand-row {
+  display: flex;
+  max-width: min(100%, 1040px);
+  min-height: clamp(62px, 12vw, 114px);
+  align-items: end;
+  justify-content: center;
+  overflow: visible;
+}
+
 /* ---------- Cards ---------- */
 
 .card-face {
@@ -364,6 +382,20 @@ button.card-face.playable:active {
 
 .pulse-red {
   animation: pulse-ring-red 1.1s ease-out infinite;
+}
+
+.urgent-action {
+  animation: urgent-pop 820ms ease-in-out infinite;
+}
+
+@keyframes urgent-pop {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.18);
+  }
 }
 
 /* Glow on own hand panel while it is your turn */

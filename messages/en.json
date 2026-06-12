@@ -1,9 +1,11 @@
 {
   "common": {
-    "appName": "Congkak Game",
+    "appName": "CongCard",
     "cancel": "Cancel",
     "close": "Close",
-    "actionFailed": "Action failed."
+    "actionFailed": "Action failed.",
+    "soundOn": "Sound on",
+    "soundOff": "Muted"
   },
   "colors": {
     "red": "Red",
@@ -75,11 +77,12 @@
     "points": "{score} pts",
     "log": "Action log",
     "yourHand": "Your hand",
-    "drawnBadge": "New",
+    "drawnBadge": "Drawn card",
     "playDrawn": "Play drawn card",
     "passDrawn": "Pass",
     "one": "ONE!",
     "catch": "Catch {name}!",
+    "readyIn": "Ready in {seconds}s",
     "hiddenCard": "Hidden card",
     "playCard": "Play {card}"
   },
@@ -92,7 +95,7 @@
     "colorChange": "Color is now {color}",
     "calledOne": "{name}: ONE!",
     "catchWindow": "{name} has 1 card left!",
-    "youHaveOne": "One card left — shout ONE!"
+    "youHaveOne": "One card left - shout ONE!"
   },
   "log": {
     "joined": "{name} joined the room.",
@@ -152,7 +155,7 @@
   },
   "rules": {
     "tagline": "Rules",
-    "title": "How to play Congkak Game",
+    "title": "How to play CongCard",
     "back": "Back",
     "goalTitle": "Goal",
     "goalBody": "Empty your hand first. The round winner scores points from cards left in every other hand.",

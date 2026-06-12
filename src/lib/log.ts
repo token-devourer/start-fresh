@@ -78,7 +78,7 @@ export function translateLog(message: string, t: Translate): string {
     }
   }
 
-  // Unknown template (e.g. emotes like "Name: Hello!") — show as-is.
+  // Unknown template (e.g. emotes like "Name: Hello!"), show as-is.
   return message;
 }
 

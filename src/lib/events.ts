@@ -1,4 +1,4 @@
-import type { Color, GameSnapshot } from "@congkak-game/shared";
+import type { Color, GameSnapshot } from "@congcard/shared";
 
 export type UiEvent =
   | { id: number; type: "yourTurn" }
@@ -7,7 +7,7 @@ export type UiEvent =
   | { id: number; type: "reverse"; direction: 1 | -1 }
   | { id: number; type: "colorChange"; color: Color }
   | { id: number; type: "calledOne"; nickname: string }
-  | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean };
+  | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number };
 
 let nextEventId = 1;
 
@@ -31,7 +31,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
     next.currentPlayerId === selfId &&
     (prev.currentPlayerId !== selfId || prev.phase !== "playing" || Boolean(prev.pendingChallenge));
 
-  // A new round deals 7 cards to everyone — skip per-card diffs to avoid
+  // A new round deals 7 cards to everyone, so skip per-card diffs to avoid
   // spurious penalty popups, but still announce the opening turn.
   if (prev.roundNumber !== next.roundNumber || prev.phase !== "playing" || next.phase !== "playing") {
     if (becameMyTurn) {
@@ -84,7 +84,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
     events.push({ id: eventId(), type: "colorChange", color: next.activeColor });
   }
 
-  if (next.oneWindow && next.oneWindow.playerId !== prev.oneWindow?.playerId) {
+  if (next.oneWindow && (next.oneWindow.playerId !== prev.oneWindow?.playerId || next.oneWindow.opensAt !== prev.oneWindow?.opensAt)) {
     const target = next.players.find((item) => item.id === next.oneWindow?.playerId);
     if (target) {
       events.push({
@@ -92,7 +92,9 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
         type: "catchWindow",
         playerId: target.id,
         nickname: target.nickname,
-        self: target.id === selfId
+        self: target.id === selfId,
+        opensAt: next.oneWindow.opensAt,
+        deadline: next.oneWindow.deadline
       });
     }
   }

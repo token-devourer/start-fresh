@@ -4,8 +4,8 @@ import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
-import type { Card, Color, GameSnapshot, RoomSettings } from "@congkak-game/shared";
-import { AVATARS } from "@congkak-game/shared";
+import type { Card, Color, GameSnapshot, RoomSettings } from "@congcard/shared";
+import { AVATARS } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { resolveRoom } from "@/lib/api";
 import { Avatar } from "./Avatar";
@@ -22,8 +22,10 @@ import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
 import { RoundEndOverlay } from "./RoundEndOverlay";
 import { RoundTable } from "./RoundTable";
+import { SoundToggle } from "./SoundToggle";
 import { TurnBanner } from "./TurnBanner";
 import { UnoButton } from "./UnoButton";
+import { unlockSound } from "@/lib/sound";
 
 interface RoomClientProps {
   code: string;
@@ -43,8 +45,8 @@ export function RoomClient({ code }: RoomClientProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   useEffect(() => {
-    const savedName = window.localStorage.getItem("congkak-game:nickname");
-    const savedAvatar = window.localStorage.getItem("congkak-game:avatar");
+    const savedName = window.localStorage.getItem("congcard:nickname");
+    const savedAvatar = window.localStorage.getItem("congcard:avatar");
     setNickname(savedName ?? "");
     if (savedAvatar && AVATARS.includes(savedAvatar as (typeof AVATARS)[number])) {
       setAvatarId(savedAvatar as (typeof AVATARS)[number]);
@@ -57,6 +59,17 @@ export function RoomClient({ code }: RoomClientProps) {
     };
   }, [reset]);
 
+  useEffect(() => {
+    const unlock = () => unlockSound();
+    window.addEventListener("pointerdown", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
   const connect = useCallback(async () => {
     if (!nickname.trim() || connectingRef.current || roomRef.current) {
       return;
@@ -68,7 +81,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
     try {
       const client = new Client(GAME_SERVER_URL);
-      const reconnectKey = `congkak-game:reconnect:${code}`;
+      const reconnectKey = `congcard:reconnect:${code}`;
       const token = window.localStorage.getItem(reconnectKey);
       let room: Room | null = null;
 
@@ -90,8 +103,8 @@ export function RoomClient({ code }: RoomClientProps) {
 
       roomRef.current = room;
       setStatus("connected");
-      window.localStorage.setItem("congkak-game:nickname", nickname.trim());
-      window.localStorage.setItem("congkak-game:avatar", avatarId);
+      window.localStorage.setItem("congcard:nickname", nickname.trim());
+      window.localStorage.setItem("congcard:avatar", avatarId);
       if (room.reconnectionToken) {
         window.localStorage.setItem(reconnectKey, room.reconnectionToken);
       }
@@ -126,6 +139,7 @@ export function RoomClient({ code }: RoomClientProps) {
   }
 
   function send(type: string, payload?: unknown) {
+    unlockSound();
     setError("");
     roomRef.current?.send(type, payload);
   }
@@ -168,9 +182,12 @@ export function RoomClient({ code }: RoomClientProps) {
   return (
     <main className="app-shell py-3 md:py-5">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <p className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]">{t("common.appName")}</p>
-          <h1 className="display text-2xl font-black">{t("room.title", { code })}</h1>
+        <div className="flex min-w-0 items-center gap-3">
+          <img src="/icon.svg" alt="" className="h-11 w-11 rounded-xl" />
+          <div className="min-w-0">
+            <p className="display text-sm font-black uppercase tracking-[0.18em] text-[var(--gold)]">{t("common.appName")}</p>
+            <h1 className="display text-2xl font-black">{t("room.title", { code })}</h1>
+          </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
           <span
@@ -185,6 +202,7 @@ export function RoomClient({ code }: RoomClientProps) {
             />
             {t(`room.status.${status}`)}
           </span>
+          <SoundToggle />
           <LanguageToggle />
           <a className="rounded-full border border-[var(--line)] px-3 py-1 text-[var(--text)]" href="/rules">
             {t("room.rules")}
@@ -241,7 +259,7 @@ function Lobby({
       setCopied(kind);
       window.setTimeout(() => setCopied(null), 1500);
     } catch {
-      // clipboard unavailable (insecure context) — ignore
+      // clipboard unavailable (insecure context), ignore
     }
   }
 
@@ -373,7 +391,7 @@ function Board({
   const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
   const isMyTurn = snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
-  const canCallOne = snapshot.self?.hand.length === 1 && !me?.calledOne;
+  const canCallOne = snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
   const canDraw = isMyTurn && !snapshot.self?.drawnCardId;
   const oneTarget =
     snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
@@ -442,10 +460,20 @@ function Board({
       <RoundEndOverlay snapshot={snapshot} send={send} />
       <UnoButton
         canCallOne={Boolean(canCallOne)}
+        callWindow={
+          canCallOne && snapshot.oneWindow
+            ? { opensAt: snapshot.oneWindow.opensAt, deadline: snapshot.oneWindow.deadline }
+            : undefined
+        }
         onCallOne={() => send("game.callOne")}
         catchTarget={
           oneTarget && snapshot.oneWindow
-            ? { id: oneTarget.id, nickname: oneTarget.nickname, deadline: snapshot.oneWindow.deadline }
+            ? {
+                id: oneTarget.id,
+                nickname: oneTarget.nickname,
+                opensAt: snapshot.oneWindow.opensAt,
+                deadline: snapshot.oneWindow.deadline
+              }
             : undefined
         }
         onCatch={(targetId) => send("game.catchOne", { targetId })}

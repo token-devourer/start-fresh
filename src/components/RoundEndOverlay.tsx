@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot } from "@congkak-game/shared";
+import type { GameSnapshot } from "@congcard/shared";
 import { Avatar } from "./Avatar";
 
 const CONFETTI_COLORS = ["var(--red)", "var(--yellow)", "var(--green)", "var(--blue)", "var(--gold)"];

@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { Card } from "@congkak-game/shared";
-import { AVATARS } from "@congkak-game/shared";
+import type { Card } from "@congcard/shared";
+import { AVATARS } from "@congcard/shared";
 import { createRoom, resolveRoom } from "@/lib/api";
 import { AvatarGrid } from "@/components/AvatarGrid";
 import { CardView } from "@/components/CardView";
@@ -29,8 +29,8 @@ export default function HomePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedName = window.localStorage.getItem("congkak-game:nickname");
-    const savedAvatar = window.localStorage.getItem("congkak-game:avatar");
+    const savedName = window.localStorage.getItem("congcard:nickname");
+    const savedAvatar = window.localStorage.getItem("congcard:avatar");
     if (savedName) {
       setNickname(savedName);
     }
@@ -60,8 +60,8 @@ export default function HomePage() {
     setBusy(true);
     setError("");
     try {
-      window.localStorage.setItem("congkak-game:nickname", nickname.trim() || "Player");
-      window.localStorage.setItem("congkak-game:avatar", avatarId);
+      window.localStorage.setItem("congcard:nickname", nickname.trim() || "Player");
+      window.localStorage.setItem("congcard:avatar", avatarId);
       await action();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.actionFailed"));
@@ -72,7 +72,11 @@ export default function HomePage() {
 
   return (
     <main className="app-shell py-6 md:py-10">
-      <header className="flex justify-end">
+      <header className="flex items-center justify-between gap-3">
+        <div className="display flex items-center gap-2 text-lg font-black">
+          <img src="/icon.svg" alt="" className="h-10 w-10 rounded-xl" />
+          <span>{t("common.appName")}</span>
+        </div>
         <LanguageToggle />
       </header>
       <section className="grid min-h-[calc(100dvh-140px)] content-center gap-8 md:grid-cols-[1.1fr_0.9fr]">

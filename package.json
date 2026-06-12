@@ -1,5 +1,5 @@
 {
-  "name": "congkak-game-web",
+  "name": "congcard-web",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
     "@colyseus/sdk": "^0.17.42",
     "@dicebear/collection": "^9.4.2",
     "@dicebear/core": "^9.4.2",
-    "@congkak-game/shared": "file:shared",
+    "@congcard/shared": "file:shared",
     "@tailwindcss/postcss": "^4.3.0",
     "framer-motion": "^12.40.0",
     "gsap": "^3.15.0",

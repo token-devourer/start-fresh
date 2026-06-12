@@ -1,8 +1,9 @@
 "use client";
 
 import { create } from "zustand";
-import type { GameSnapshot } from "@congkak-game/shared";
+import type { GameSnapshot } from "@congcard/shared";
 import { diffSnapshots, type UiEvent } from "./events";
+import { playUiEventSounds } from "./sound";
 
 interface RoomStore {
   snapshot: GameSnapshot | null;
@@ -27,6 +28,7 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     }
 
     const fresh = diffSnapshots(get().snapshot, snapshot);
+    playUiEventSounds(fresh);
     set((state) => ({
       snapshot,
       events: [...state.events, ...fresh].slice(-MAX_VISIBLE_EVENTS)

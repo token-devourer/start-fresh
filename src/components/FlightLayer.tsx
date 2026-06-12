@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
-import type { Card, GameSnapshot } from "@congkak-game/shared";
+import type { Card, GameSnapshot } from "@congcard/shared";
 import { anchorRect } from "@/lib/anchors";
 import { useRoomStore } from "@/lib/store";
 

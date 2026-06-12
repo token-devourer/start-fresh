@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Card, GameSnapshot } from "@congkak-game/shared";
+import type { Card, GameSnapshot } from "@congcard/shared";
 import { canPlayCard } from "../src/lib/rules";
 
 function card(id: string, color: Card["color"], value: Card["value"]): Card {

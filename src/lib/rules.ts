@@ -1,4 +1,4 @@
-import type { Card, GameSnapshot } from "@congkak-game/shared";
+import type { Card, GameSnapshot } from "@congcard/shared";
 
 export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean {
   if (!snapshot?.self || snapshot.phase !== "playing" || snapshot.pendingChallenge) {

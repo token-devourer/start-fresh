@@ -15,8 +15,11 @@ const fontBody = Nunito({
 });
 
 export const metadata: Metadata = {
-  title: "Congkak Game",
-  description: "Congkak Game™ — a real-time multiplayer card game for private rooms."
+  title: "CongCard",
+  description: "CongCard, a confident real-time multiplayer card game for private rooms.",
+  icons: {
+    icon: "/icon.svg"
+  }
 };
 
 export default async function RootLayout({

@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
   turbopack: {
     root: turbopackRoot
   },
-  transpilePackages: ["@congkak-game/shared"],
+  transpilePackages: ["@congcard/shared"],
   async headers() {
     return [
       {
