@@ -37,9 +37,12 @@ export function RoomClient({ code }: RoomClientProps) {
   const t = useTranslations();
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
-  const { snapshot, error, setSnapshot, setError, reset } = useRoomStore();
+  const { snapshot, setSnapshot, setError, reset } = useRoomStore();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
+  // nickname is only set once confirmed (saved profile or submitted form);
+  // draftNickname holds form input so typing does not auto-join the room.
   const [nickname, setNickname] = useState("");
+  const [draftNickname, setDraftNickname] = useState("");
   const [avatarId, setAvatarId] = useState<(typeof AVATARS)[number]>("sun");
   const [profileReady, setProfileReady] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
@@ -112,8 +115,8 @@ export function RoomClient({ code }: RoomClientProps) {
       room.onMessage("state", (nextSnapshot: GameSnapshot) => {
         setSnapshot(nextSnapshot);
       });
-      room.onMessage("error", (payload: { message?: string }) => {
-        setError(payload.message ?? t("common.actionFailed"));
+      room.onMessage("error", (payload: { code?: string; message?: string }) => {
+        setError(payload.message ?? t("common.actionFailed"), payload.code);
       });
       room.onLeave(() => {
         setStatus("closed");
@@ -135,7 +138,10 @@ export function RoomClient({ code }: RoomClientProps) {
 
   function submitProfile(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    void connect();
+    const name = draftNickname.trim();
+    if (name) {
+      setNickname(name);
+    }
   }
 
   function send(type: string, payload?: unknown) {
@@ -165,13 +171,13 @@ export function RoomClient({ code }: RoomClientProps) {
           </div>
           <input
             className="field"
-            value={nickname}
-            onChange={(event) => setNickname(event.target.value)}
+            value={draftNickname}
+            onChange={(event) => setDraftNickname(event.target.value)}
             maxLength={20}
             placeholder={t("landing.nicknamePlaceholder")}
           />
           <AvatarGrid value={avatarId} onChange={setAvatarId} />
-          <button className="button" disabled={!nickname.trim() || status === "connecting"}>
+          <button className="button" disabled={!draftNickname.trim() || status === "connecting"}>
             {t("room.join")}
           </button>
         </motion.form>
@@ -210,18 +216,7 @@ export function RoomClient({ code }: RoomClientProps) {
         </div>
       </header>
 
-      <AnimatePresence>
-        {error ? (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            className="mb-3 rounded-lg border border-red-400/40 bg-red-950/40 p-3 text-sm text-red-100"
-          >
-            {error}
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+      <ErrorToast />
 
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
@@ -231,6 +226,63 @@ export function RoomClient({ code }: RoomClientProps) {
         <Board snapshot={snapshot} send={send} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
       )}
     </main>
+  );
+}
+
+// Server error codes that have a friendlier, localized phrasing than the raw
+// English message sent over the wire.
+const ERROR_MESSAGE_KEYS: Record<string, string> = {
+  not_your_turn: "errors.notYourTurn",
+  invalid_card: "errors.invalidCard",
+  drawn_card_only: "errors.drawnCardOnly",
+  already_drew: "errors.alreadyDrew",
+  color_required: "errors.colorRequired",
+  cannot_call_one: "errors.cannotCallOne",
+  catch_failed: "errors.catchFailed",
+  pending_challenge: "errors.pendingChallenge",
+  empty_deck: "errors.emptyDeck",
+  not_host: "errors.notHost",
+  room_full: "errors.roomFull",
+  game_in_progress: "errors.gameInProgress"
+};
+
+// Floating toast instead of an in-flow banner: it never pushes the board
+// around, dismisses itself, and translates known server error codes.
+function ErrorToast() {
+  const t = useTranslations();
+  const error = useRoomStore((state) => state.error);
+  const setError = useRoomStore((state) => state.setError);
+
+  useEffect(() => {
+    if (!error) {
+      return undefined;
+    }
+
+    const id = window.setTimeout(() => setError(""), 3500);
+    return () => window.clearTimeout(id);
+  }, [error, setError]);
+
+  const messageKey = error?.code ? ERROR_MESSAGE_KEYS[error.code] : undefined;
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 top-3 z-[70] flex justify-center px-4">
+      <AnimatePresence>
+        {error ? (
+          <motion.div
+            key={error.id}
+            initial={{ opacity: 0, y: -16, scale: 0.92 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 420, damping: 26 }}
+            className="shake flex max-w-[92vw] items-center gap-2 rounded-full border border-red-400/45 bg-[#33100b]/95 px-4 py-2 text-sm font-bold text-red-100 shadow-[0_12px_32px_rgba(0,0,0,0.45)] backdrop-blur-sm"
+            role="alert"
+          >
+            <span aria-hidden="true">⚠️</span>
+            <span className="min-w-0 truncate">{messageKey ? t(messageKey) : error.message}</span>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
   );
 }
 
@@ -434,22 +486,46 @@ function Board({
           <LogTicker snapshot={snapshot} />
         </div>
 
-        <div
-          ref={anchorRef("hand")}
-          className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
-        >
-          <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
-            <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
-            <span className="text-xs font-bold text-[var(--muted)]">
-              {t("board.cards", { count: snapshot.self?.hand.length ?? 0 })} · {t("board.points", { score: me?.score ?? 0 })}
-            </span>
-          </div>
-          <Hand
-            snapshot={snapshot}
-            isMyTurn={isMyTurn}
-            onPlay={play}
-            onPassDrawn={() => send("game.playDrawn", { play: false })}
+        <div className="relative">
+          {/* Anchored above the hand so the action sits where the player is
+              already looking, instead of a detached corner of the screen. */}
+          <UnoButton
+            canCallOne={Boolean(canCallOne)}
+            callWindow={
+              canCallOne && snapshot.oneWindow
+                ? { opensAt: snapshot.oneWindow.opensAt, deadline: snapshot.oneWindow.deadline }
+                : undefined
+            }
+            onCallOne={() => send("game.callOne")}
+            catchTarget={
+              oneTarget && snapshot.oneWindow
+                ? {
+                    id: oneTarget.id,
+                    nickname: oneTarget.nickname,
+                    opensAt: snapshot.oneWindow.opensAt,
+                    deadline: snapshot.oneWindow.deadline
+                  }
+                : undefined
+            }
+            onCatch={(targetId) => send("game.catchOne", { targetId })}
           />
+          <div
+            ref={anchorRef("hand")}
+            className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
+          >
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
+              <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
+              <span className="text-xs font-bold text-[var(--muted)]">
+                {t("board.cards", { count: snapshot.self?.hand.length ?? 0 })} · {t("board.points", { score: me?.score ?? 0 })}
+              </span>
+            </div>
+            <Hand
+              snapshot={snapshot}
+              isMyTurn={isMyTurn}
+              onPlay={play}
+              onPassDrawn={() => send("game.playDrawn", { play: false })}
+            />
+          </div>
         </div>
       </section>
 
@@ -458,26 +534,6 @@ function Board({
       <GameEventOverlay />
       <ChallengeModal snapshot={snapshot} send={send} />
       <RoundEndOverlay snapshot={snapshot} send={send} />
-      <UnoButton
-        canCallOne={Boolean(canCallOne)}
-        callWindow={
-          canCallOne && snapshot.oneWindow
-            ? { opensAt: snapshot.oneWindow.opensAt, deadline: snapshot.oneWindow.deadline }
-            : undefined
-        }
-        onCallOne={() => send("game.callOne")}
-        catchTarget={
-          oneTarget && snapshot.oneWindow
-            ? {
-                id: oneTarget.id,
-                nickname: oneTarget.nickname,
-                opensAt: snapshot.oneWindow.opensAt,
-                deadline: snapshot.oneWindow.deadline
-              }
-            : undefined
-        }
-        onCatch={(targetId) => send("game.catchOne", { targetId })}
-      />
       <AnimatePresence>
         {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>

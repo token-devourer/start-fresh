@@ -28,7 +28,9 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
   const catchVisible = Boolean(catchTarget) && now <= (catchTarget?.deadline ?? 0);
 
   return (
-    <div className="fixed bottom-5 right-4 z-30 grid justify-items-end gap-3" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+    // Sits centered just above the hand panel (the parent is the hand's
+    // relative wrapper) so the call-to-action stays where the player looks.
+    <div className="pointer-events-none absolute inset-x-0 bottom-full z-30 mb-2 flex items-end justify-center gap-3">
       <AnimatePresence>
         {catchTarget && catchVisible ? (
           <motion.button
@@ -38,7 +40,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             exit={{ scale: 0, opacity: 0 }}
             whileTap={{ scale: 0.92 }}
             transition={{ type: "spring", stiffness: 420, damping: 16 }}
-            className={`display flex items-center gap-2 rounded-full border-2 px-5 py-3 text-lg font-black text-white ${
+            className={`display pointer-events-auto flex items-center gap-2 rounded-full border-2 px-5 py-3 text-lg font-black text-white ${
               catchReady ? "pulse-red urgent-action border-white/45" : "border-white/20 bg-black/80"
             }`}
             style={catchReady ? { background: "linear-gradient(180deg, #f06354, var(--red))", boxShadow: "var(--shadow-pop)" } : undefined}
@@ -61,7 +63,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             exit={{ scale: 0, opacity: 0 }}
             whileTap={{ scale: 0.9 }}
             transition={{ type: "spring", stiffness: 420, damping: 16 }}
-            className={`display grid min-h-24 min-w-24 place-items-center rounded-full border-4 px-3 text-center text-xl font-black text-[#221a07] ${
+            className={`display pointer-events-auto grid min-h-24 min-w-24 place-items-center rounded-full border-4 px-3 text-center text-xl font-black text-[#221a07] ${
               callReady ? "pulse-gold urgent-action border-white/50" : "border-white/20"
             }`}
             style={{

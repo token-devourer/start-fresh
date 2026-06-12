@@ -129,7 +129,23 @@
     "reversed": "Turn direction changed.",
     "activeColor": "Active color: {color}.",
     "wonRound": "{name} won the round with {points} points.",
-    "reshuffled": "Discard pile was reshuffled."
+    "reshuffled": "Discard pile was reshuffled.",
+    "passedEmpty": "{name} passed — no cards left to draw.",
+    "deckExhausted": "The draw pile ran out of cards."
+  },
+  "errors": {
+    "notYourTurn": "Not your turn yet — hang tight!",
+    "invalidCard": "That card can't be played right now.",
+    "drawnCardOnly": "You can only play the card you just drew.",
+    "alreadyDrew": "You already drew a card this turn.",
+    "colorRequired": "Pick a color for the Wild card first.",
+    "cannotCallOne": "The One window isn't open.",
+    "catchFailed": "Too late — they can't be caught now.",
+    "pendingChallenge": "Resolve the Wild +4 challenge first.",
+    "emptyDeck": "No cards left to draw.",
+    "notHost": "Only the host can do that.",
+    "roomFull": "This room is full.",
+    "gameInProgress": "This room is already playing."
   },
   "challenge": {
     "title": "Wild +4 challenge",

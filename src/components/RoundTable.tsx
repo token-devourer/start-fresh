@@ -51,7 +51,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw, onCatch }: Rou
     now <= (snapshot.oneWindow?.deadline ?? 0);
 
   return (
-    <div className="relative h-full min-h-[420px] md:min-h-[460px]">
+    <div className="relative h-full min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]">
       <div className="table-rim absolute inset-x-1 inset-y-8 md:inset-x-10 md:inset-y-6">
         <div className="table-felt">
           <DirectionRing direction={snapshot.direction} />

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { Card, GameSnapshot } from "@congcard/shared";
@@ -13,15 +14,67 @@ interface HandProps {
   onPassDrawn: () => void;
 }
 
+// Must mirror the .card-face widths in globals.css (including the 760px
+// breakpoint) — they drive the overlap math below.
+const CARD_WIDTH = { normal: 88, compact: 56 };
+const CARD_WIDTH_NARROW = { normal: 70, compact: 46 };
+// Minimum sliver of an overlapped card that must stay visible/clickable.
+const MIN_VISIBLE_STEP = 14;
+// Cards always overlap at least a little so the hand reads as a fan.
+const MIN_OVERLAP = 24;
+
 export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
   const t = useTranslations();
+  const stackRef = useRef<HTMLDivElement | null>(null);
+  const [stackWidth, setStackWidth] = useState(0);
+  const [isNarrow, setIsNarrow] = useState(false);
   const hand = snapshot.self?.hand ?? [];
   const drawnId = snapshot.self?.drawnCardId;
   const count = hand.length;
-  const rowCount = count <= 12 ? 1 : count <= 24 ? 2 : 3;
-  const rows = chunkCards(hand, rowCount);
-  const overlap = count <= 12 ? 28 : count <= 24 ? 38 : 48;
+
+  // The fan is sized from the measured panel width, so zooming in or out
+  // (which shrinks/grows the CSS viewport) re-packs the cards instead of
+  // overflowing the panel or needing scrollbars.
+  useEffect(() => {
+    const element = stackRef.current;
+    if (!element) {
+      return undefined;
+    }
+
+    const update = () => {
+      const styles = window.getComputedStyle(element);
+      const padding = (parseFloat(styles.paddingLeft) || 0) + (parseFloat(styles.paddingRight) || 0);
+      setStackWidth(element.clientWidth - padding);
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 760px)");
+    const update = () => setIsNarrow(query.matches);
+    update();
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+
   const compact = count > 24;
+  const cardWidth = isNarrow
+    ? CARD_WIDTH_NARROW[compact ? "compact" : "normal"]
+    : CARD_WIDTH[compact ? "compact" : "normal"];
+  // 1040 mirrors the .hand-row max-width cap in globals.css.
+  const usableWidth = Math.min(stackWidth > 0 ? stackWidth : 640, 1040);
+
+  const maxPerRow = Math.max(1, Math.floor((usableWidth - cardWidth) / MIN_VISIBLE_STEP) + 1);
+  const rowCountBySize = count <= 12 ? 1 : count <= 24 ? 2 : 3;
+  const rowCount = Math.min(4, Math.max(rowCountBySize, Math.ceil(count / maxPerRow)));
+  const rows = chunkCards(hand, rowCount);
+  const longestRow = rows.reduce((max, row) => Math.max(max, row.length), 1);
+  const step =
+    longestRow > 1 ? Math.min(cardWidth - MIN_OVERLAP, (usableWidth - cardWidth) / (longestRow - 1)) : 0;
+  const overlap = longestRow > 1 ? Math.max(0, cardWidth - step) : 0;
 
   return (
     <div className="grid gap-2">
@@ -38,7 +91,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
         </motion.div>
       ) : null}
 
-      <div className="hand-stack pb-2 pt-5">
+      <div ref={stackRef} className="hand-stack pb-2 pt-5">
         {rows.map((row, rowIndex) => {
           const center = (row.length - 1) / 2;
           const spreadDeg = row.length > 1 ? Math.min(5, 40 / row.length) : 0;

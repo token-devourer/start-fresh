@@ -59,8 +59,8 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
       });
     }
 
-    // cardCount === 1 distinguishes a real call from catchOne, which also
-    // flips calledOne after dealing the 2-card penalty.
+    // cardCount === 1 guards against any future path that flips calledOne
+    // outside a genuine call (a caught player ends up with 3 cards).
     if (!before.calledOne && player.calledOne && player.cardCount === 1) {
       events.push({ id: eventId(), type: "calledOne", nickname: player.nickname });
     }
