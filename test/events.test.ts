@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { Card, GameSnapshot, PublicPlayer } from "@kartu-satu/shared";
+import type { Card, GameSnapshot, PublicPlayer } from "@congkak-game/shared";
 import { diffSnapshots } from "../src/lib/events";
 
 function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer {

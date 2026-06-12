@@ -1,6 +1,6 @@
-# Kartu Satu Frontend
+# Congkak Game Frontend
 
-Next.js frontend for Kartu Satu, a private-room multiplayer card game.
+Next.js frontend for Congkak Game, a private-room multiplayer card game.
 
 ## Local Development
 

@@ -1,4 +1,4 @@
-import type { Card, Color } from "@kartu-satu/shared";
+import type { Card, Color } from "@congkak-game/shared";
 import { cardText } from "@/lib/rules";
 
 interface CardViewProps {

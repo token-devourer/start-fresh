@@ -1,4 +1,4 @@
-import type { Color, GameSnapshot } from "@kartu-satu/shared";
+import type { Color, GameSnapshot } from "@congkak-game/shared";
 
 export type UiEvent =
   | { id: number; type: "yourTurn" }

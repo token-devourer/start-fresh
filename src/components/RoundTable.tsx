@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot, PublicPlayer } from "@kartu-satu/shared";
+import type { GameSnapshot, PublicPlayer } from "@congkak-game/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";

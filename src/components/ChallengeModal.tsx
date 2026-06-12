@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { GameSnapshot } from "@kartu-satu/shared";
+import type { GameSnapshot } from "@congkak-game/shared";
 import { useNow } from "@/lib/useNow";
 import { CardView } from "./CardView";
 

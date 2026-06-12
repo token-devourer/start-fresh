@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { AVATARS } from "@kartu-satu/shared";
+import { AVATARS } from "@congkak-game/shared";
 import { Avatar } from "./Avatar";
 
 interface AvatarGridProps {

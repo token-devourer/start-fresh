@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import type { GameSnapshot } from "@kartu-satu/shared";
+import type { GameSnapshot } from "@congkak-game/shared";
 import { diffSnapshots, type UiEvent } from "./events";
 
 interface RoomStore {

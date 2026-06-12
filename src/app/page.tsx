@@ -4,8 +4,8 @@ import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { Card } from "@kartu-satu/shared";
-import { AVATARS } from "@kartu-satu/shared";
+import type { Card } from "@congkak-game/shared";
+import { AVATARS } from "@congkak-game/shared";
 import { createRoom, resolveRoom } from "@/lib/api";
 import { AvatarGrid } from "@/components/AvatarGrid";
 import { CardView } from "@/components/CardView";
@@ -29,8 +29,8 @@ export default function HomePage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const savedName = window.localStorage.getItem("kartu-satu:nickname");
-    const savedAvatar = window.localStorage.getItem("kartu-satu:avatar");
+    const savedName = window.localStorage.getItem("congkak-game:nickname");
+    const savedAvatar = window.localStorage.getItem("congkak-game:avatar");
     if (savedName) {
       setNickname(savedName);
     }
@@ -44,7 +44,7 @@ export default function HomePage() {
     event.preventDefault();
     await withProfile(async () => {
       const room = await createRoom();
-      router.push(`/room/${room.code}?roomId=${room.roomId}`);
+      router.push(`/room/${room.code}`);
     });
   }
 
@@ -52,7 +52,7 @@ export default function HomePage() {
     event.preventDefault();
     await withProfile(async () => {
       const room = await resolveRoom(roomCode.trim());
-      router.push(`/room/${room.code}?roomId=${room.roomId}`);
+      router.push(`/room/${room.code}`);
     });
   }
 
@@ -60,8 +60,8 @@ export default function HomePage() {
     setBusy(true);
     setError("");
     try {
-      window.localStorage.setItem("kartu-satu:nickname", nickname.trim() || "Player");
-      window.localStorage.setItem("kartu-satu:avatar", avatarId);
+      window.localStorage.setItem("congkak-game:nickname", nickname.trim() || "Player");
+      window.localStorage.setItem("congkak-game:avatar", avatarId);
       await action();
     } catch (caught) {
       setError(caught instanceof Error ? caught.message : t("common.actionFailed"));

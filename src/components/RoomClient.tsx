@@ -1,12 +1,11 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
-import type { Card, Color, GameSnapshot, RoomSettings } from "@kartu-satu/shared";
-import { AVATARS } from "@kartu-satu/shared";
+import type { Card, Color, GameSnapshot, RoomSettings } from "@congkak-game/shared";
+import { AVATARS } from "@congkak-game/shared";
 import { anchorRef } from "@/lib/anchors";
 import { resolveRoom } from "@/lib/api";
 import { Avatar } from "./Avatar";
@@ -34,8 +33,6 @@ type ConnectionStatus = "idle" | "connecting" | "connected" | "closed";
 
 export function RoomClient({ code }: RoomClientProps) {
   const t = useTranslations();
-  const searchParams = useSearchParams();
-  const roomIdFromUrl = searchParams.get("roomId");
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
   const { snapshot, error, setSnapshot, setError, reset } = useRoomStore();
@@ -46,8 +43,8 @@ export function RoomClient({ code }: RoomClientProps) {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
 
   useEffect(() => {
-    const savedName = window.localStorage.getItem("kartu-satu:nickname");
-    const savedAvatar = window.localStorage.getItem("kartu-satu:avatar");
+    const savedName = window.localStorage.getItem("congkak-game:nickname");
+    const savedAvatar = window.localStorage.getItem("congkak-game:avatar");
     setNickname(savedName ?? "");
     if (savedAvatar && AVATARS.includes(savedAvatar as (typeof AVATARS)[number])) {
       setAvatarId(savedAvatar as (typeof AVATARS)[number]);
@@ -71,7 +68,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
     try {
       const client = new Client(GAME_SERVER_URL);
-      const reconnectKey = `kartu-satu:reconnect:${code}`;
+      const reconnectKey = `congkak-game:reconnect:${code}`;
       const token = window.localStorage.getItem(reconnectKey);
       let room: Room | null = null;
 
@@ -84,7 +81,7 @@ export function RoomClient({ code }: RoomClientProps) {
       }
 
       if (!room) {
-        const lookup = roomIdFromUrl ? { code, roomId: roomIdFromUrl } : await resolveRoom(code);
+        const lookup = await resolveRoom(code);
         room = await client.joinById(lookup.roomId, {
           nickname: nickname.trim(),
           avatarId
@@ -93,8 +90,8 @@ export function RoomClient({ code }: RoomClientProps) {
 
       roomRef.current = room;
       setStatus("connected");
-      window.localStorage.setItem("kartu-satu:nickname", nickname.trim());
-      window.localStorage.setItem("kartu-satu:avatar", avatarId);
+      window.localStorage.setItem("congkak-game:nickname", nickname.trim());
+      window.localStorage.setItem("congkak-game:avatar", avatarId);
       if (room.reconnectionToken) {
         window.localStorage.setItem(reconnectKey, room.reconnectionToken);
       }
@@ -115,7 +112,7 @@ export function RoomClient({ code }: RoomClientProps) {
     } finally {
       connectingRef.current = false;
     }
-  }, [avatarId, code, nickname, roomIdFromUrl, setError, setSnapshot, t]);
+  }, [avatarId, code, nickname, setError, setSnapshot, t]);
 
   useEffect(() => {
     if (profileReady && nickname.trim()) {

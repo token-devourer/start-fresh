@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { PublicPlayer } from "@kartu-satu/shared";
+import type { PublicPlayer } from "@congkak-game/shared";
 import { anchorRef } from "@/lib/anchors";
 import { useNow } from "@/lib/useNow";
 import { Avatar } from "./Avatar";
