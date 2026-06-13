@@ -23,6 +23,7 @@ import { Hand } from "./Hand";
 import { LanguageToggle } from "./LanguageToggle";
 import { RoundEndOverlay } from "./RoundEndOverlay";
 import { RoundTable } from "./RoundTable";
+import { RulesModal } from "./RulesModal";
 import { SoundToggle } from "./SoundToggle";
 import { TurnBanner } from "./TurnBanner";
 import { UnoButton } from "./UnoButton";
@@ -48,6 +49,7 @@ export function RoomClient({ code }: RoomClientProps) {
   const [avatarId, setAvatarId] = useState<(typeof AVATARS)[number]>("sun");
   const [profileReady, setProfileReady] = useState(false);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
+  const [showRules, setShowRules] = useState(false);
 
   useEffect(() => {
     const savedName = window.localStorage.getItem("congcard:nickname");
@@ -161,6 +163,19 @@ export function RoomClient({ code }: RoomClientProps) {
     router.push("/");
   }
 
+  function leaveAndForget() {
+    // Full session reset for the header "leave" button: drop the reconnect token
+    // AND the saved identity (nickname/avatar). Without this the room silently
+    // auto-rejoins with a name the player had no way to change or remove.
+    window.localStorage.removeItem(`congcard:reconnect:${code}`);
+    window.localStorage.removeItem("congcard:nickname");
+    window.localStorage.removeItem("congcard:avatar");
+    roomRef.current?.leave();
+    roomRef.current = null;
+    reset();
+    router.push("/");
+  }
+
   if (!profileReady) {
     return null;
   }
@@ -221,13 +236,27 @@ export function RoomClient({ code }: RoomClientProps) {
           </span>
           <SoundToggle />
           <LanguageToggle />
-          <a className="rounded-full border border-[var(--line)] px-3 py-1 text-[var(--text)]" href="/rules">
+          <button
+            type="button"
+            className="rounded-full border border-[var(--line)] px-3 py-1 text-[var(--text)] transition-colors hover:border-[var(--gold)]"
+            onClick={() => setShowRules(true)}
+          >
             {t("room.rules")}
-          </a>
+          </button>
+          <button
+            type="button"
+            className="rounded-full border border-red-400/40 px-3 py-1 font-bold text-red-200 transition-colors hover:border-red-400 hover:text-red-100"
+            onClick={leaveAndForget}
+            title={t("room.leaveHint")}
+          >
+            {t("room.leave")}
+          </button>
         </div>
       </header>
 
       <ErrorToast />
+
+      <RulesModal open={showRules} onClose={() => setShowRules(false)} />
 
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
