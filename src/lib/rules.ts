@@ -1,7 +1,13 @@
 import type { Card, GameSnapshot } from "@congcard/shared";
 
 export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean {
-  if (!snapshot?.self || snapshot.phase !== "playing" || snapshot.pendingChallenge || snapshot.oneWindow?.callPending) {
+  if (
+    !snapshot?.self ||
+    snapshot.self.role !== "player" ||
+    snapshot.phase !== "playing" ||
+    snapshot.pendingChallenge ||
+    snapshot.oneWindow?.callPending
+  ) {
     return false;
   }
 

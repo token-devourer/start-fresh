@@ -16,7 +16,8 @@ interface RoundEndOverlayProps {
 export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProps) {
   const t = useTranslations();
   const open = snapshot.phase === "roundEnd" || snapshot.phase === "gameEnd";
-  const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
+  const isPlayer = snapshot.self?.role === "player";
+  const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const winner = snapshot.players.find((player) => player.id === (snapshot.gameWinnerId ?? snapshot.roundWinnerId));
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
 
@@ -90,7 +91,11 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
             </div>
 
             {snapshot.phase === "roundEnd" ? (
-              me?.isHost ? (
+              !isPlayer ? (
+                <p className="text-sm text-[var(--muted)]">
+                  {snapshot.self?.role === "waiting" ? t("roundEnd.waitingPlayer") : t("roundEnd.spectatorOnly")}
+                </p>
+              ) : me?.isHost ? (
                 <button className="button !min-h-12" onClick={() => send("game.start")}>
                   {t("roundEnd.nextRound")}
                 </button>

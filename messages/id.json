@@ -62,7 +62,9 @@
     "copyCode": "Salin kode",
     "copyLink": "Salin link",
     "copied": "Tersalin!",
-    "waitingHost": "Menunggu host memulai..."
+    "waitingHost": "Menunggu host memulai...",
+    "allowMidGameJoin": "Izinkan gabung ronde berikutnya",
+    "allowMidGameJoinHint": "Pengguna terlambat bisa menonton sekarang dan mendapat kursi saat ronde berikutnya mulai."
   },
   "board": {
     "turnLabel": "Giliran",
@@ -87,7 +89,18 @@
     "calling": "Mengunci SATU...",
     "readyIn": "Siap dalam {seconds} dtk",
     "hiddenCard": "Kartu tertutup",
-    "playCard": "Mainkan {card}"
+    "playCard": "Mainkan {card}",
+    "waitingNextRound": "Menunggu ronde berikutnya",
+    "spectatingOnly": "Hanya menonton",
+    "readOnlyView": "Kamu bisa melihat meja, log, dan skor, tetapi tidak bisa melakukan aksi pemain.",
+    "scoreboard": "Papan skor",
+    "viewers": "Penonton",
+    "viewersCount": "{count} penonton",
+    "autoPlay": "auto",
+    "roles": {
+      "waiting": "menunggu",
+      "spectator": "penonton"
+    }
   },
   "events": {
     "yourTurn": "GILIRANMU!",
@@ -102,9 +115,13 @@
   },
   "log": {
     "joined": "{name} bergabung.",
+    "joinedWaiting": "{name} menunggu ronde berikutnya.",
+    "joinedSpectator": "{name} bergabung sebagai penonton.",
+    "joinedNextRound": "{name} masuk ke ronde berikutnya.",
     "left": "{name} keluar.",
     "reconnected": "{name} tersambung kembali.",
     "disconnected": "{name} terputus.",
+    "autoPlay": "{name} memakai auto play sampai tersambung kembali.",
     "ready": "{name} siap.",
     "notReady": "{name} batal siap.",
     "settingsUpdated": "Pengaturan ruangan diperbarui.",
@@ -119,8 +136,10 @@
     "valWild": "Wild",
     "valWild4": "Wild +4",
     "drewOne": "{name} mengambil satu kartu.",
+    "autoDrewOne": "{name} otomatis mengambil satu kartu saat terputus.",
     "drewTwo": "{name} menarik dua kartu.",
     "passed": "{name} lewat setelah mengambil.",
+    "autoPassed": "{name} otomatis lewat saat terputus.",
     "timedOut": "{name} kehabisan waktu dan mengambil satu kartu.",
     "calledOne": "{name} meneriakkan SATU!",
     "caught": "{name} menangkap {target}!",
@@ -152,6 +171,7 @@
     "gameFinished": "Permainan ini sudah selesai.",
     "maxPlayersTooLow": "Maksimal pemain tidak boleh lebih kecil dari jumlah pemain saat ini.",
     "oneCallPending": "Panggilan SATU sedang dikunci — tunggu sebentar.",
+    "playerNotFound": "Kamu sedang menonton ruangan ini dan tidak bisa melakukan aksi pemain.",
     "invalidRoomCode": "Masukkan kode ruangan 6 karakter yang valid.",
     "rateLimited": "Terlalu banyak permintaan — tunggu sebentar lalu coba lagi."
   },
@@ -176,6 +196,8 @@
     "score": "Skor",
     "nextRound": "Mulai ronde berikutnya",
     "waitingHost": "Menunggu host memulai ronde berikutnya...",
+    "waitingPlayer": "Kamu akan masuk sebagai pemain saat host memulai ronde berikutnya.",
+    "spectatorOnly": "Ruangan ini hanya mode menonton untukmu.",
     "leave": "Keluar ke beranda"
   },
   "rules": {

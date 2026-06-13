@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Client, Room } from "@colyseus/sdk";
-import type { Card, Color, GameSnapshot, RoomSettings } from "@congcard/shared";
+import type { Card, Color, GameSnapshot, ParticipantRole, RoomSettings } from "@congcard/shared";
 import { AVATARS } from "@congcard/shared";
 import { anchorRef } from "@/lib/anchors";
 import { resolveRoom } from "@/lib/api";
@@ -14,6 +14,7 @@ import { AvatarGrid } from "./AvatarGrid";
 import { GAME_SERVER_URL } from "@/lib/config";
 import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { needsColor, playableCardInHand } from "@/lib/rules";
+import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { useRoomStore } from "@/lib/store";
 import { ChallengeModal } from "./ChallengeModal";
 import { ColorPicker } from "./ColorPicker";
@@ -88,8 +89,10 @@ export function RoomClient({ code }: RoomClientProps) {
 
     try {
       const client = new Client(GAME_SERVER_URL);
-      const reconnectKey = `congcard:reconnect:${code}`;
+      const reconnectKey = reconnectStorageKey(code);
+      const resumeKey = resumeStorageKey(code);
       const token = window.localStorage.getItem(reconnectKey);
+      const resumeToken = window.localStorage.getItem(resumeKey) ?? undefined;
       let room: Room | null = null;
 
       if (token) {
@@ -104,7 +107,8 @@ export function RoomClient({ code }: RoomClientProps) {
         const lookup = await resolveRoom(code);
         room = await client.joinById(lookup.roomId, {
           nickname: nickname.trim(),
-          avatarId
+          avatarId,
+          resumeToken
         });
       }
 
@@ -117,6 +121,9 @@ export function RoomClient({ code }: RoomClientProps) {
       }
 
       room.onMessage("state", (nextSnapshot: GameSnapshot) => {
+        if (nextSnapshot.self?.resumeToken) {
+          window.localStorage.setItem(resumeKey, nextSnapshot.self.resumeToken);
+        }
         setSnapshot(nextSnapshot);
       });
       room.onMessage("error", (payload: { code?: string; message?: string }) => {
@@ -155,19 +162,16 @@ export function RoomClient({ code }: RoomClientProps) {
   }
 
   function leaveToHome() {
-    // Drop the reconnect token so coming back to this URL asks for a fresh
-    // join instead of silently rejoining the finished game.
-    window.localStorage.removeItem(`congcard:reconnect:${code}`);
+    // Drop room session tokens so a later visit starts a fresh join.
+    clearRoomSession(window.localStorage, code);
     roomRef.current?.leave();
     roomRef.current = null;
     router.push("/");
   }
 
   function leaveAndForget() {
-    // Full session reset for the header "leave" button: drop the reconnect token
-    // AND the saved identity (nickname/avatar). Without this the room silently
-    // auto-rejoins with a name the player had no way to change or remove.
-    window.localStorage.removeItem(`congcard:reconnect:${code}`);
+    // Full session reset for the header leave button.
+    clearRoomSession(window.localStorage, code);
     window.localStorage.removeItem("congcard:nickname");
     window.localStorage.removeItem("congcard:avatar");
     roomRef.current?.leave();
@@ -287,6 +291,7 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   game_finished: "errors.gameFinished",
   max_players_too_low: "errors.maxPlayersTooLow",
   one_call_pending: "errors.oneCallPending",
+  player_not_found: "errors.playerNotFound",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -462,6 +467,19 @@ function Lobby({
             <option value={500}>{t("lobby.points500")}</option>
           </select>
         </label>
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.allowMidGameJoin}
+            onChange={(event) => updateSetting({ allowMidGameJoin: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.allowMidGameJoin")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.allowMidGameJoinHint")}</span>
+          </span>
+        </label>
         {isHost ? (
           <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
             {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
@@ -488,23 +506,30 @@ function Board({
   setSelectedCard: (card: Card | null) => void;
 }) {
   const t = useTranslations();
-  const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
-  const isMyTurn = snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+  const selfRole = snapshot.self?.role ?? "spectator";
+  const isPlayer = selfRole === "player";
+  const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
+  const isMyTurn = isPlayer && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const actionLocked = Boolean(snapshot.oneWindow?.callPending);
-  const canCallOne = snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
+  const canCallOne =
+    isPlayer && snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
   const canDraw = isMyTurn && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
-    snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
   useEffect(() => {
-    if (selectedCard && !playableCardInHand(snapshot, selectedCard)) {
+    if (!isPlayer || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
       setSelectedCard(null);
     }
-  }, [selectedCard, setSelectedCard, snapshot]);
+  }, [isPlayer, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
+    if (!isPlayer) {
+      return;
+    }
+
     const playable = playableCardInHand(snapshot, card);
     if (!playable) {
       return;
@@ -569,18 +594,24 @@ function Board({
             ref={anchorRef("hand")}
             className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
           >
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
-              <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
-              <span className="text-xs font-bold text-[var(--muted)]">
+            {isPlayer ? (
+              <>
+                <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
+                  <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
+                  <span className="text-xs font-bold text-[var(--muted)]">
                 {t("board.cards", { count: snapshot.self?.hand.length ?? 0 })} · {t("board.points", { score: me?.score ?? 0 })}
-              </span>
-            </div>
-            <Hand
-              snapshot={snapshot}
-              isMyTurn={isMyTurn}
-              onPlay={play}
-              onPassDrawn={() => send("game.playDrawn", { play: false })}
-            />
+                  </span>
+                </div>
+                <Hand
+                  snapshot={snapshot}
+                  isMyTurn={isMyTurn}
+                  onPlay={play}
+                  onPassDrawn={() => send("game.playDrawn", { play: false })}
+                />
+              </>
+            ) : (
+              <ViewerStatus snapshot={snapshot} role={selfRole} />
+            )}
           </div>
         </div>
       </section>
@@ -588,12 +619,66 @@ function Board({
       <FlightLayer />
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
-      <ChallengeModal snapshot={snapshot} send={send} />
+      {isPlayer ? <ChallengeModal snapshot={snapshot} send={send} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>
     </>
+  );
+}
+
+function ViewerStatus({ snapshot, role }: { snapshot: GameSnapshot; role: ParticipantRole }) {
+  const t = useTranslations();
+  const statusKey = role === "waiting" ? "board.waitingNextRound" : "board.spectatingOnly";
+  const viewers = snapshot.viewers ?? [];
+
+  return (
+    <div className="grid gap-3 p-2">
+      <div className="rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/10 p-4 text-center">
+        <p className="display text-lg font-black text-[var(--gold)]">{t(statusKey)}</p>
+        <p className="mt-1 text-sm text-[var(--muted)]">{t("board.readOnlyView")}</p>
+      </div>
+
+      <div className="rounded-xl bg-black/25 p-3">
+        <div className="mb-2 flex items-center justify-between text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
+          <span>{t("board.scoreboard")}</span>
+          <span>{t("board.viewersCount", { count: viewers.length })}</span>
+        </div>
+        <div className="grid gap-1.5">
+          {[...snapshot.players].sort((a, b) => b.score - a.score).map((player) => (
+            <div key={player.id} className="flex items-center justify-between gap-2 rounded-lg bg-black/20 px-3 py-2 text-sm">
+              <span className="flex min-w-0 items-center gap-2">
+                <Avatar avatarId={player.avatarId} size={24} />
+                <span className="truncate font-bold">{player.nickname}</span>
+                {!player.connected ? <span className="text-xs text-red-300">{t("lobby.offline")}</span> : null}
+                {player.autoPlay ? <span className="text-xs text-[var(--gold)]">{t("board.autoPlay")}</span> : null}
+                  </span>
+              <span className="tabular-nums text-[var(--muted)]">{player.score}</span>
+                </div>
+          ))}
+        </div>
+      </div>
+
+      {viewers.length > 0 ? (
+        <div className="rounded-xl bg-black/25 p-3">
+          <div className="mb-2 text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">{t("board.viewers")}</div>
+          <div className="grid gap-1.5">
+            {viewers.map((viewer) => (
+              <div key={viewer.id} className="flex items-center justify-between gap-2 rounded-lg bg-black/20 px-3 py-2 text-sm">
+                <span className="flex min-w-0 items-center gap-2">
+                  <Avatar avatarId={viewer.avatarId} size={22} />
+                  <span className="truncate font-bold">{viewer.nickname}</span>
+                </span>
+                <span className={viewer.role === "waiting" ? "text-[var(--gold)]" : "text-[var(--muted)]"}>
+                  {t(`board.roles.${viewer.role}`)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 

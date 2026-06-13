@@ -12,9 +12,10 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
     seq: 1,
     code: "ABC123",
     phase: "playing",
-    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, modeOptions: {} },
+    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, allowMidGameJoin: true, modeOptions: {} },
     players: [],
-    self: { id: "me", hand },
+    viewers: [],
+    self: { id: "me", role: "player", hand },
     discardTop: card("top", "green", 5),
     activeColor: "red",
     direction: 1,
@@ -57,9 +58,18 @@ describe("client rules", () => {
   });
 
   it("allows only the drawn card while resolving a draw", () => {
-    const state = snapshot({ self: { id: "me", hand: [card("red-1", "red", 1), card("blue-5", "blue", 5)], drawnCardId: "blue-5" } });
+    const state = snapshot({
+      self: { id: "me", role: "player", hand: [card("red-1", "red", 1), card("blue-5", "blue", 5)], drawnCardId: "blue-5" }
+    });
 
     expect(canPlayCard(state, state.self!.hand[0]!)).toBe(false);
     expect(canPlayCard(state, state.self!.hand[1]!)).toBe(true);
+  });
+
+  it("blocks spectator and waiting actions", () => {
+    const state = snapshot({ self: { id: "viewer", role: "waiting", hand: [] } });
+
+    expect(canPlayCard(state, card("red-1", "red", 1))).toBe(false);
+    expect(playableCardInHand(state, card("red-1", "red", 1))).toBeNull();
   });
 });

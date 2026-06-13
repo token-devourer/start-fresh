@@ -14,6 +14,8 @@ function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer
     isHost: false,
     ready: false,
     calledOne: false,
+    autoPlay: false,
+    missedDisconnectedTurns: 0,
     ...overrides
   };
 }
@@ -27,13 +29,14 @@ function snapshot(overrides: Partial<GameSnapshot>): GameSnapshot {
     seq: 1,
     code: "ABC123",
     phase: "playing",
-    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, modeOptions: {} },
+    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, allowMidGameJoin: true, modeOptions: {} },
     players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1 })],
+    viewers: [],
     direction: 1,
     roundNumber: 1,
     drawPileCount: 80,
     actionLog: [],
-    self: { id: "a", hand: [] },
+    self: { id: "a", role: "player", hand: [] },
     discardTop: card({ id: "top-1" }),
     activeColor: "red",
     currentPlayerId: "a",

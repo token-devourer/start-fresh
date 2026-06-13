@@ -62,7 +62,9 @@
     "copyCode": "Copy code",
     "copyLink": "Copy link",
     "copied": "Copied!",
-    "waitingHost": "Waiting for the host to start..."
+    "waitingHost": "Waiting for the host to start...",
+    "allowMidGameJoin": "Allow next-round join",
+    "allowMidGameJoinHint": "Late users can watch now and take a seat when the next round starts."
   },
   "board": {
     "turnLabel": "Turn",
@@ -87,7 +89,18 @@
     "calling": "Locking ONE...",
     "readyIn": "Ready in {seconds}s",
     "hiddenCard": "Hidden card",
-    "playCard": "Play {card}"
+    "playCard": "Play {card}",
+    "waitingNextRound": "Waiting for next round",
+    "spectatingOnly": "Spectating only",
+    "readOnlyView": "You can watch the table, log, and scores, but cannot take player actions.",
+    "scoreboard": "Scoreboard",
+    "viewers": "Viewers",
+    "viewersCount": "{count} viewers",
+    "autoPlay": "auto",
+    "roles": {
+      "waiting": "waiting",
+      "spectator": "spectator"
+    }
   },
   "events": {
     "yourTurn": "YOUR TURN!",
@@ -102,9 +115,13 @@
   },
   "log": {
     "joined": "{name} joined the room.",
+    "joinedWaiting": "{name} is waiting for the next round.",
+    "joinedSpectator": "{name} joined as a spectator.",
+    "joinedNextRound": "{name} joined the next round.",
     "left": "{name} left the room.",
     "reconnected": "{name} reconnected.",
     "disconnected": "{name} disconnected.",
+    "autoPlay": "{name} is on auto play until they reconnect.",
     "ready": "{name} is ready.",
     "notReady": "{name} is not ready.",
     "settingsUpdated": "Room settings were updated.",
@@ -119,8 +136,10 @@
     "valWild": "Wild",
     "valWild4": "Wild +4",
     "drewOne": "{name} drew one card.",
+    "autoDrewOne": "{name} auto-drew one card while disconnected.",
     "drewTwo": "{name} drew two cards.",
     "passed": "{name} passed after drawing.",
+    "autoPassed": "{name} auto-passed while disconnected.",
     "timedOut": "{name} timed out and drew one card.",
     "calledOne": "{name} called ONE!",
     "caught": "{name} caught {target}!",
@@ -152,6 +171,7 @@
     "gameFinished": "This game has already finished.",
     "maxPlayersTooLow": "Max players can't be lower than the current room size.",
     "oneCallPending": "One call is resolving — wait a moment.",
+    "playerNotFound": "You are watching this room and cannot take player actions.",
     "invalidRoomCode": "Enter a valid 6-character room code.",
     "rateLimited": "Too many requests — wait a moment and try again."
   },
@@ -176,6 +196,8 @@
     "score": "Score",
     "nextRound": "Start next round",
     "waitingHost": "Waiting for the host to start the next round...",
+    "waitingPlayer": "You will join as a player when the host starts the next round.",
+    "spectatorOnly": "This room is spectator-only for you.",
     "leave": "Leave to home"
   },
   "rules": {
