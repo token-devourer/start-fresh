@@ -109,6 +109,8 @@ export interface OneWindow {
   playerId: string;
   opensAt: number;
   deadline: number;
+  callPending?: boolean;
+  callResolvesAt?: number;
 }
 
 export interface GameLogEntry {

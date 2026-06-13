@@ -9,11 +9,20 @@ interface CatchTarget {
   nickname: string;
   opensAt: number;
   deadline: number;
+  callPending?: boolean;
+  callResolvesAt?: number;
+}
+
+interface CallWindow {
+  opensAt: number;
+  deadline: number;
+  callPending?: boolean;
+  callResolvesAt?: number;
 }
 
 interface UnoButtonProps {
   canCallOne: boolean;
-  callWindow?: { opensAt: number; deadline: number };
+  callWindow?: CallWindow;
   onCallOne: () => void;
   catchTarget?: CatchTarget;
   onCatch: (targetId: string) => void;
@@ -22,10 +31,13 @@ interface UnoButtonProps {
 export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCatch }: UnoButtonProps) {
   const t = useTranslations();
   const now = useNow(100);
-  const callReady = canCallOne && Boolean(callWindow) && now >= (callWindow?.opensAt ?? 0) && now <= (callWindow?.deadline ?? 0);
-  const catchReady = Boolean(catchTarget) && now >= (catchTarget?.opensAt ?? 0) && now <= (catchTarget?.deadline ?? 0);
-  const callVisible = canCallOne && Boolean(callWindow) && now <= (callWindow?.deadline ?? 0);
-  const catchVisible = Boolean(catchTarget) && now <= (catchTarget?.deadline ?? 0);
+  const callPending = Boolean(callWindow?.callPending);
+  const callVisibleUntil = Math.max(callWindow?.deadline ?? 0, callWindow?.callResolvesAt ?? 0);
+  const catchVisibleUntil = Math.max(catchTarget?.deadline ?? 0, catchTarget?.callResolvesAt ?? 0);
+  const callReady = canCallOne && Boolean(callWindow) && !callPending && now >= (callWindow?.opensAt ?? 0) && now <= (callWindow?.deadline ?? 0);
+  const catchReady = Boolean(catchTarget) && now >= (catchTarget?.opensAt ?? 0) && now <= catchVisibleUntil;
+  const callVisible = canCallOne && Boolean(callWindow) && now <= callVisibleUntil;
+  const catchVisible = Boolean(catchTarget) && now <= catchVisibleUntil;
 
   return (
     // Docked at the middle-right edge of the viewport, stacked vertically,
@@ -49,7 +61,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
           >
             <span aria-hidden="true">!</span>
             {catchReady ? t("board.catch", { name: catchTarget.nickname }) : t("board.readyIn", { seconds: readySeconds(catchTarget.opensAt, now) })}
-            <ActionCountdown opensAt={catchTarget.opensAt} deadline={catchTarget.deadline} />
+            <ActionCountdown opensAt={catchTarget.opensAt} deadline={catchTarget.callPending ? catchTarget.callResolvesAt ?? catchTarget.deadline : catchTarget.deadline} />
           </motion.button>
         ) : null}
       </AnimatePresence>
@@ -73,8 +85,8 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             disabled={!callReady}
             onClick={onCallOne}
           >
-            <span>{callReady ? t("board.one") : t("board.readyIn", { seconds: readySeconds(callWindow.opensAt, now) })}</span>
-            <ActionCountdown opensAt={callWindow.opensAt} deadline={callWindow.deadline} />
+            <span>{callPending ? t("board.calling") : callReady ? t("board.one") : t("board.readyIn", { seconds: readySeconds(callWindow.opensAt, now) })}</span>
+            <ActionCountdown opensAt={callPending ? now : callWindow.opensAt} deadline={callPending ? callWindow.callResolvesAt ?? callWindow.deadline : callWindow.deadline} />
           </motion.button>
         ) : null}
       </AnimatePresence>

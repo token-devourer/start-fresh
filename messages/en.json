@@ -82,6 +82,7 @@
     "passDrawn": "Pass",
     "one": "ONE!",
     "catch": "Catch {name}!",
+    "calling": "Locking ONE...",
     "readyIn": "Ready in {seconds}s",
     "hiddenCard": "Hidden card",
     "playCard": "Play {card}"
@@ -146,6 +147,9 @@
     "notHost": "Only the host can do that.",
     "roomFull": "This room is full.",
     "gameInProgress": "This room is already playing.",
+    "gameFinished": "This game has already finished.",
+    "maxPlayersTooLow": "Max players can't be lower than the current room size.",
+    "oneCallPending": "One call is resolving — wait a moment.",
     "invalidRoomCode": "Enter a valid 6-character room code.",
     "rateLimited": "Too many requests — wait a moment and try again."
   },
