@@ -82,6 +82,7 @@
     "passDrawn": "Lewati",
     "one": "SATU!",
     "catch": "Tangkap {name}!",
+    "calling": "Mengunci SATU...",
     "readyIn": "Siap dalam {seconds} dtk",
     "hiddenCard": "Kartu tertutup",
     "playCard": "Mainkan {card}"

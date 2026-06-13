@@ -44,10 +44,11 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
   const activePlayer = snapshot.players.find((player) => player.id === snapshot.currentPlayerId);
   const colorVar = snapshot.activeColor ? COLOR_VAR[snapshot.activeColor] : "var(--gold)";
   const now = useNow(100);
+  const oneVisibleUntil = Math.max(snapshot.oneWindow?.deadline ?? 0, snapshot.oneWindow?.callResolvesAt ?? 0);
   const oneReady =
     Boolean(snapshot.oneWindow) &&
     now >= (snapshot.oneWindow?.opensAt ?? 0) &&
-    now <= (snapshot.oneWindow?.deadline ?? 0);
+    now <= oneVisibleUntil;
 
   return (
     <div className="relative h-full min-h-[min(420px,46dvh)] md:min-h-[min(460px,50dvh)]">

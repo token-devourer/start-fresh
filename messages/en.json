@@ -82,6 +82,7 @@
     "passDrawn": "Pass",
     "one": "ONE!",
     "catch": "Catch {name}!",
+    "calling": "Locking ONE...",
     "readyIn": "Ready in {seconds}s",
     "hiddenCard": "Hidden card",
     "playCard": "Play {card}"

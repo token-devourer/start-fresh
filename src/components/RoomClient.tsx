@@ -460,7 +460,7 @@ function Board({
   const canDraw = isMyTurn && !snapshot.self?.drawnCardId;
   const oneTarget =
     snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
-      ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId)
+      ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
   function play(card: Card) {
@@ -498,7 +498,12 @@ function Board({
             canCallOne={Boolean(canCallOne)}
             callWindow={
               canCallOne && snapshot.oneWindow
-                ? { opensAt: snapshot.oneWindow.opensAt, deadline: snapshot.oneWindow.deadline }
+                ? {
+                    opensAt: snapshot.oneWindow.opensAt,
+                    deadline: snapshot.oneWindow.deadline,
+                    callPending: snapshot.oneWindow.callPending,
+                    callResolvesAt: snapshot.oneWindow.callResolvesAt
+                  }
                 : undefined
             }
             onCallOne={() => send("game.callOne")}
@@ -508,7 +513,9 @@ function Board({
                     id: oneTarget.id,
                     nickname: oneTarget.nickname,
                     opensAt: snapshot.oneWindow.opensAt,
-                    deadline: snapshot.oneWindow.deadline
+                    deadline: snapshot.oneWindow.deadline,
+                    callPending: snapshot.oneWindow.callPending,
+                    callResolvesAt: snapshot.oneWindow.callResolvesAt
                   }
                 : undefined
             }
