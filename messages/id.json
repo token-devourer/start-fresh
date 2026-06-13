@@ -28,6 +28,8 @@
   "room": {
     "title": "Ruangan {code}",
     "rules": "Aturan",
+    "leave": "Keluar",
+    "leaveHint": "Keluar ruangan dan hapus nama tersimpan",
     "connecting": "Menyambung ke ruangan...",
     "chooseSeatName": "Pilih nama kursimu",
     "join": "Gabung ruangan",

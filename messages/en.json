@@ -28,6 +28,8 @@
   "room": {
     "title": "Room {code}",
     "rules": "Rules",
+    "leave": "Leave",
+    "leaveHint": "Leave the room and clear your saved name",
     "connecting": "Connecting to room...",
     "chooseSeatName": "Choose your seat name",
     "join": "Join room",
