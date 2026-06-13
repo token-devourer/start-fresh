@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useNow } from "@/lib/useNow";
@@ -28,6 +29,23 @@ interface UnoButtonProps {
   onCatch: (targetId: string) => void;
 }
 
+// Six edge slots the call-to-action can pop into: right/left × top/middle/bottom.
+// A fresh slot is rolled every time a new One/Catch window opens, so players have
+// to spot the button instead of parking their cursor on a fixed spot. That hunt
+// replaces the old "ready in" buffer and visible countdown as the difficulty.
+const POSITIONS = [
+  "top-24 right-2 items-end md:right-4",
+  "top-1/2 right-2 -translate-y-1/2 items-end md:right-4",
+  "bottom-28 right-2 items-end md:right-4",
+  "top-24 left-2 items-start md:left-4",
+  "top-1/2 left-2 -translate-y-1/2 items-start md:left-4",
+  "bottom-28 left-2 items-start md:left-4"
+];
+
+function randomPosition(): string {
+  return POSITIONS[Math.floor(Math.random() * POSITIONS.length)];
+}
+
 export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCatch }: UnoButtonProps) {
   const t = useTranslations();
   const now = useNow(100);
@@ -39,10 +57,30 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
   const callVisible = canCallOne && Boolean(callWindow) && now <= callVisibleUntil;
   const catchVisible = Boolean(catchTarget) && now <= catchVisibleUntil;
 
+  // Only one of call/catch is ever live for a given client (the One window
+  // belongs to exactly one player), so a single shared slot is enough. Key the
+  // roll on the window's opensAt so it stays put while visible and re-rolls only
+  // when a brand-new window opens.
+  const activeKey =
+    catchTarget && catchVisible
+      ? `catch:${catchTarget.id}:${catchTarget.opensAt}`
+      : callVisible && callWindow
+        ? `call:${callWindow.opensAt}`
+        : null;
+
+  const [position, setPosition] = useState(POSITIONS[1]);
+  const [seenKey, setSeenKey] = useState<string | null>(null);
+  if (activeKey && activeKey !== seenKey) {
+    // Adjust derived state during render (supported React pattern): the button
+    // mounts directly at its slot with no first-frame jump. We never touch the
+    // slot when activeKey is null, so the exit animation plays from the same
+    // spot the button lived at.
+    setSeenKey(activeKey);
+    setPosition(randomPosition());
+  }
+
   return (
-    // Docked at the middle-right edge of the viewport, stacked vertically,
-    // so the call-to-action never covers seats, the pile, or the hand.
-    <div className="pointer-events-none fixed right-2 top-1/2 z-[60] flex -translate-y-1/2 flex-col items-end gap-3 md:right-4">
+    <div className={`pointer-events-none fixed z-[60] flex flex-col gap-3 ${position}`}>
       <AnimatePresence>
         {catchTarget && catchVisible ? (
           <motion.button
@@ -60,8 +98,7 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             onClick={() => onCatch(catchTarget.id)}
           >
             <span aria-hidden="true">!</span>
-            {catchReady ? t("board.catch", { name: catchTarget.nickname }) : t("board.readyIn", { seconds: readySeconds(catchTarget.opensAt, now) })}
-            <ActionCountdown opensAt={catchTarget.opensAt} deadline={catchTarget.callPending ? catchTarget.callResolvesAt ?? catchTarget.deadline : catchTarget.deadline} />
+            {t("board.catch", { name: catchTarget.nickname })}
           </motion.button>
         ) : null}
       </AnimatePresence>
@@ -85,28 +122,10 @@ export function UnoButton({ canCallOne, callWindow, onCallOne, catchTarget, onCa
             disabled={!callReady}
             onClick={onCallOne}
           >
-            <span>{callPending ? t("board.calling") : callReady ? t("board.one") : t("board.readyIn", { seconds: readySeconds(callWindow.opensAt, now) })}</span>
-            <ActionCountdown opensAt={callPending ? now : callWindow.opensAt} deadline={callPending ? callWindow.callResolvesAt ?? callWindow.deadline : callWindow.deadline} />
+            <span>{callPending ? t("board.calling") : t("board.one")}</span>
           </motion.button>
         ) : null}
       </AnimatePresence>
     </div>
-  );
-}
-
-function readySeconds(opensAt: number, now: number): string {
-  return Math.max(0, (opensAt - now) / 1000).toFixed(1);
-}
-
-function ActionCountdown({ opensAt, deadline }: { opensAt: number; deadline: number }) {
-  const now = useNow(100);
-  const active = now >= opensAt;
-  const seconds = Math.max(0, ((active ? deadline : opensAt) - now) / 1000);
-  const urgent = active && seconds <= 1.2;
-
-  return (
-    <span className={`grid h-7 min-w-7 place-items-center rounded-full px-1.5 text-sm tabular-nums ${urgent ? "bg-[var(--red)] text-white" : "bg-black/40"}`}>
-      {active ? seconds.toFixed(0) : seconds.toFixed(1)}
-    </span>
   );
 }
