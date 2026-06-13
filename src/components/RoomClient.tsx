@@ -254,7 +254,9 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   empty_deck: "errors.emptyDeck",
   not_host: "errors.notHost",
   room_full: "errors.roomFull",
-  game_in_progress: "errors.gameInProgress"
+  game_in_progress: "errors.gameInProgress",
+  invalid_room_code: "errors.invalidRoomCode",
+  rate_limited: "errors.rateLimited"
 };
 
 // Floating toast instead of an in-flow banner: it never pushes the board
