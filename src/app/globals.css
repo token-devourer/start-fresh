@@ -539,3 +539,13 @@ button.card-face.playable:active {
     transition-duration: 0.01ms !important;
   }
 }
+
+@keyframes card-idle-rock {
+  0%, 100% { transform: translateY(-12px) rotateZ(-1.2deg) rotateY(-2deg); }
+  50%      { transform: translateY(-14px) rotateZ(1.2deg)  rotateY(2deg); }
+}
+
+@keyframes card-shine {
+  0%, 70%, 100% { background-position: 0 0, 0 0, -120% 0; }
+  85%           { background-position: 0 0, 0 0,  140% 0; }
+}
