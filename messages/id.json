@@ -81,7 +81,7 @@
     "points": "{score} poin",
     "log": "Log aksi",
     "yourHand": "Kartumu",
-    "drawnBadge": "Kartu baru",
+    "drawnBadge": "Drawn card {count}",
     "playDrawn": "Mainkan kartu baru",
     "passDrawn": "Lewati",
     "one": "SATU!",

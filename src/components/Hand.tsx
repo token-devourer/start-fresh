@@ -30,6 +30,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
   const [isNarrow, setIsNarrow] = useState(false);
   const hand = snapshot.self?.hand ?? [];
   const drawnId = snapshot.self?.drawnCardId;
+  const drawnCount = drawnId ? 1 : 0;
   const count = hand.length;
 
   // The fan is sized from the measured panel width, so zooming in or out
@@ -84,7 +85,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center justify-center gap-3 text-sm font-bold"
         >
-          <span className="rounded-full bg-black/40 px-3 py-1.5">{t("board.drawnBadge")} ✨</span>
+          <span className="rounded-full bg-black/40 px-3 py-1.5">{t("board.drawnBadge", { count: drawnCount })} ✨</span>
           <button className="button secondary !min-h-9 !px-4 text-sm" onClick={onPassDrawn}>
             {t("board.passDrawn")}
           </button>
@@ -126,7 +127,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
                     >
                       {isDrawn ? (
                         <span className="display absolute -top-4 left-1/2 z-30 -translate-x-1/2 rounded-full bg-[var(--gold)] px-2 py-0.5 text-[10px] font-black text-black">
-                          {t("board.drawnBadge")}
+                          {t("board.drawnBadge", { count: drawnCount })}
                         </span>
                       ) : null}
                       <CardView

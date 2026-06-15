@@ -81,7 +81,7 @@
     "points": "{score} pts",
     "log": "Action log",
     "yourHand": "Your hand",
-    "drawnBadge": "Drawn card",
+    "drawnBadge": "Drawn card {count}",
     "playDrawn": "Play drawn card",
     "passDrawn": "Pass",
     "one": "ONE!",
