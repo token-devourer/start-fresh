@@ -39,17 +39,25 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
     return null;
   }
 
+  const finishedRank = player.finishedRank;
+  const finished = Boolean(finishedRank);
+  const seatActive = Boolean(active && !finished);
+
   return (
     <div
       ref={anchorRef(`seat:${player.id}`)}
-      className={`tableseat ${active ? "active" : ""} ${oneOpen ? "pulse-red" : ""} ${player.connected ? "" : "offline"} ${shaking ? "shake" : ""}`}
+      className={`tableseat ${seatActive ? "active" : ""} ${oneOpen && !finished ? "pulse-red" : ""} ${
+        player.connected ? "" : "offline"
+      } ${shaking ? "shake" : ""}`}
     >
       <div className="relative mx-auto h-14 w-14">
-        {active && turnDeadline && turnTimeoutSec ? <TimerRing deadline={turnDeadline} totalSec={turnTimeoutSec} /> : null}
+        {seatActive && turnDeadline && turnTimeoutSec ? <TimerRing deadline={turnDeadline} totalSec={turnTimeoutSec} /> : null}
         <Avatar
           avatarId={player.avatarId}
           size={48}
-          className={`absolute left-1 top-1 ${active ? "ring-2 ring-[var(--gold)]" : "ring-1 ring-white/15"}`}
+          className={`absolute left-1 top-1 ${seatActive ? "ring-2 ring-[var(--gold)]" : "ring-1 ring-white/15"} ${
+            finished ? "opacity-75 grayscale-[0.25]" : ""
+          }`}
         />
         {player.isHost ? (
           <span className="absolute -right-1.5 -top-1.5 text-sm drop-shadow" aria-label={t("lobby.host")}>
@@ -59,6 +67,11 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
         {player.calledOne && player.cardCount === 1 ? (
           <span className="display absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-[var(--gold)] px-1.5 py-px text-[10px] font-black text-black shadow">
             {t("board.one")}
+          </span>
+        ) : null}
+        {finished ? (
+          <span className="display absolute -bottom-1 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full bg-green-300 px-1.5 py-px text-[10px] font-black text-black shadow">
+            #{finishedRank}
           </span>
         ) : null}
       </div>
@@ -73,6 +86,9 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
         <span className="text-[10px] font-bold text-[var(--muted)]">{t("board.points", { score: player.score })}</span>
       </div>
 
+      {finished ? (
+        <div className="mt-0.5 text-center text-[10px] font-black text-green-200">{t("board.finishedRank", { rank: finishedRank ?? "" })}</div>
+      ) : null}
       {!player.connected ? <div className="mt-0.5 text-center text-[10px] font-bold text-red-300">{t("lobby.offline")}</div> : null}
     </div>
   );

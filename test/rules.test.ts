@@ -104,4 +104,29 @@ describe("client rules", () => {
     expect(canPlayCard(state, card("red-1", "red", 1))).toBe(false);
     expect(playableCardInHand(state, card("red-1", "red", 1))).toBeNull();
   });
+
+  it("blocks finished Last Stand players from taking actions", () => {
+    const state = snapshot({
+      settings: { ...snapshot().settings, scoreTarget: "lastStand" },
+      players: [
+        {
+          id: "me",
+          nickname: "Me",
+          avatarId: "sun",
+          seat: 0,
+          cardCount: 0,
+          score: 0,
+          connected: true,
+          isHost: false,
+          ready: false,
+          calledOne: false,
+          autoPlay: false,
+          missedDisconnectedTurns: 0,
+          finishedRank: 1
+        }
+      ]
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(false);
+  });
 });

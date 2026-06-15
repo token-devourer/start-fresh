@@ -19,7 +19,15 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
   const isPlayer = snapshot.self?.role === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const winner = snapshot.players.find((player) => player.id === (snapshot.gameWinnerId ?? snapshot.roundWinnerId));
+  const placements = snapshot.lastStandPlacements;
+  const lastStandRows = placements
+    ?.map((placement) => {
+      const player = snapshot.players.find((item) => item.id === placement.playerId);
+      return player ? { placement, player } : null;
+    })
+    .filter((item): item is NonNullable<typeof item> => Boolean(item));
   const ranked = [...snapshot.players].sort((a, b) => b.score - a.score);
+  const showLastStand = Boolean(lastStandRows?.length);
 
   return (
     <AnimatePresence>
@@ -66,10 +74,31 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
             <div className="rounded-xl bg-black/30 p-3">
               <div className="mb-2 flex justify-between text-xs font-bold uppercase tracking-[0.14em] text-[var(--muted)]">
                 <span>{t("roundEnd.player")}</span>
-                <span>{t("roundEnd.score")}</span>
+                <span>{showLastStand ? t("roundEnd.place") : t("roundEnd.score")}</span>
               </div>
               <div className="grid gap-1.5">
-                {ranked.map((player, index) => (
+                {showLastStand
+                  ? lastStandRows!.map(({ player, placement }, index) => (
+                      <motion.div
+                        key={player.id}
+                        initial={{ opacity: 0, x: -16 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.25 + index * 0.08 }}
+                        className={`flex items-center justify-between rounded-lg px-3 py-2 ${
+                          player.id === winner?.id ? "bg-[var(--gold)]/20 font-black" : placement.isLoser ? "bg-red-950/45" : "bg-black/20"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <Avatar avatarId={player.avatarId} size={24} />
+                          <span className="truncate">{player.nickname}</span>
+                          {player.id === winner?.id ? <span>ðŸ†</span> : null}
+                        </span>
+                        <span className={placement.isLoser ? "font-black text-red-200" : "tabular-nums"}>
+                          {placement.isLoser ? t("roundEnd.lost") : t("roundEnd.placement", { rank: placement.rank })}
+                        </span>
+                      </motion.div>
+                    ))
+                  : ranked.map((player, index) => (
                   <motion.div
                     key={player.id}
                     initial={{ opacity: 0, x: -16 }}
@@ -86,7 +115,7 @@ export function RoundEndOverlay({ snapshot, send, onLeave }: RoundEndOverlayProp
                     </span>
                     <span className="tabular-nums">{player.score}</span>
                   </motion.div>
-                ))}
+                    ))}
               </div>
             </div>
 

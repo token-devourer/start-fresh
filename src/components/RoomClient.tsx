@@ -473,10 +473,16 @@ function Lobby({
             className="field"
             disabled={!isHost}
             value={snapshot.settings.scoreTarget}
-            onChange={(event) => updateSetting({ scoreTarget: Number(event.target.value) as RoomSettings["scoreTarget"] })}
+            onChange={(event) => {
+              const value = event.target.value;
+              updateSetting({
+                scoreTarget: value === "lastStand" ? "lastStand" : (Number(value) as RoomSettings["scoreTarget"])
+              });
+            }}
           >
             <option value={0}>{t("lobby.oneRound")}</option>
             <option value={500}>{t("lobby.points500")}</option>
+            <option value="lastStand">{t("lobby.lastStand")}</option>
           </select>
         </label>
         <label className="grid gap-2">
@@ -563,24 +569,26 @@ function Board({
   const selfRole = snapshot.self?.role ?? "spectator";
   const isPlayer = selfRole === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
-  const isMyTurn = isPlayer && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+  const finished = Boolean(me?.finishedRank);
+  const isMyTurn =
+    isPlayer && !finished && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const actionLocked = Boolean(snapshot.oneWindow);
   const canCallOne =
-    isPlayer && snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
+    isPlayer && !finished && snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
   const canDraw = isMyTurn && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
-    isPlayer && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && !finished && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
   useEffect(() => {
-    if (!isPlayer || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
+    if (!isPlayer || finished || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
       setSelectedCard(null);
     }
-  }, [isPlayer, selectedCard, setSelectedCard, snapshot]);
+  }, [finished, isPlayer, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer) {
+    if (!isPlayer || finished) {
       return;
     }
 
@@ -648,7 +656,7 @@ function Board({
             ref={anchorRef("hand")}
             className={`panel p-3 transition-shadow duration-300 ${isMyTurn ? "my-turn-glow" : ""}`}
           >
-            {isPlayer ? (
+            {isPlayer && !finished ? (
               <>
                 <div className="mb-1 flex flex-wrap items-center justify-between gap-2 px-1">
                   <span className="text-xs font-bold uppercase tracking-[0.16em] text-[var(--muted)]">{t("board.yourHand")}</span>
@@ -664,7 +672,7 @@ function Board({
                 />
               </>
             ) : (
-              <ViewerStatus snapshot={snapshot} role={selfRole} />
+              <ViewerStatus snapshot={snapshot} role={finished ? "spectator" : selfRole} finishedRank={me?.finishedRank} />
             )}
           </div>
         </div>
@@ -673,7 +681,7 @@ function Board({
       <FlightLayer />
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
-      {isPlayer ? <ChallengeModal snapshot={snapshot} send={send} /> : null}
+      {isPlayer && !finished ? <ChallengeModal snapshot={snapshot} send={send} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
@@ -682,15 +690,17 @@ function Board({
   );
 }
 
-function ViewerStatus({ snapshot, role }: { snapshot: GameSnapshot; role: ParticipantRole }) {
+function ViewerStatus({ snapshot, role, finishedRank }: { snapshot: GameSnapshot; role: ParticipantRole; finishedRank?: number }) {
   const t = useTranslations();
-  const statusKey = role === "waiting" ? "board.waitingNextRound" : "board.spectatingOnly";
+  const statusKey = finishedRank ? "board.finishedRound" : role === "waiting" ? "board.waitingNextRound" : "board.spectatingOnly";
   const viewers = snapshot.viewers ?? [];
 
   return (
     <div className="grid gap-3 p-2">
       <div className="rounded-xl border border-[var(--gold)]/35 bg-[var(--gold)]/10 p-4 text-center">
-        <p className="display text-lg font-black text-[var(--gold)]">{t(statusKey)}</p>
+        <p className="display text-lg font-black text-[var(--gold)]">
+          {finishedRank ? t(statusKey, { rank: finishedRank }) : t(statusKey)}
+        </p>
         <p className="mt-1 text-sm text-[var(--muted)]">{t("board.readOnlyView")}</p>
       </div>
 

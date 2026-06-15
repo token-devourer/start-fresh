@@ -16,6 +16,11 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     return false;
   }
 
+  const selfPlayer = snapshot.players.find((player) => player.id === snapshot.self?.id);
+  if (selfPlayer?.finishedRank) {
+    return false;
+  }
+
   if (snapshot.pendingStack) {
     return snapshot.pendingStack.targetPlayerId === snapshot.self.id && canStackCard(handCard, snapshot.pendingStack.kind);
   }

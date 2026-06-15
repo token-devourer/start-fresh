@@ -17,6 +17,7 @@ interface RulesModalProps {
 export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const t = useTranslations("rules");
   const deckBoxes = settings?.deckBoxes ?? 1;
+  const lastStand = settings?.scoreTarget === "lastStand";
 
   useEffect(() => {
     if (!open) {
@@ -71,7 +72,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
 
             <section className="space-y-2">
               <h2 className="display text-xl font-bold">{t("goalTitle")}</h2>
-              <p className="text-[var(--muted)]">{t("goalBody")}</p>
+              <p className="text-[var(--muted)]">{lastStand ? t("goalLastStandBody") : t("goalBody")}</p>
             </section>
 
             <section className="space-y-2">
@@ -83,6 +84,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
               <h2 className="display text-xl font-bold">{t("settingsTitle")}</h2>
               <ul className="list-disc space-y-2 pl-5 text-[var(--muted)]">
                 <li>{t("modeRule")}</li>
+                <li>{lastStand ? t("lastStandOn") : t("scoreRule")}</li>
                 <li>{settings?.jumpInEnabled ? t("jumpInOn") : t("jumpInOff")}</li>
                 <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
                 <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
