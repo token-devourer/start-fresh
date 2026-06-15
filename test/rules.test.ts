@@ -12,7 +12,17 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
     seq: 1,
     code: "ABC123",
     phase: "playing",
-    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, allowMidGameJoin: true, modeOptions: {} },
+    settings: {
+      modeId: "standard",
+      maxPlayers: 10,
+      turnTimeoutSec: 30,
+      scoreTarget: 0,
+      allowMidGameJoin: true,
+      jumpInEnabled: false,
+      stackingEnabled: false,
+      deckBoxes: 1,
+      modeOptions: {}
+    },
     players: [],
     viewers: [],
     self: { id: "me", role: "player", hand },
@@ -64,6 +74,28 @@ describe("client rules", () => {
 
     expect(canPlayCard(state, state.self!.hand[0]!)).toBe(false);
     expect(canPlayCard(state, state.self!.hand[1]!)).toBe(true);
+  });
+
+  it("allows an exact matching jump in when enabled", () => {
+    const state = snapshot({
+      currentPlayerId: "other",
+      settings: { ...snapshot().settings, jumpInEnabled: true },
+      self: { id: "me", role: "player", hand: [card("jump-red-5", "red", 5)] },
+      discardTop: card("top-red-5", "red", 5)
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+  });
+
+  it("allows only matching stack cards during a draw stack", () => {
+    const state = snapshot({
+      currentPlayerId: "me",
+      pendingStack: { kind: "draw2", targetPlayerId: "me", totalDraw: 2 },
+      self: { id: "me", role: "player", hand: [card("blue-draw2", "blue", "draw2"), card("wild4", null, "wild4")] }
+    });
+
+    expect(canPlayCard(state, state.self!.hand[0]!)).toBe(true);
+    expect(canPlayCard(state, state.self!.hand[1]!)).toBe(false);
   });
 
   it("blocks spectator and waiting actions", () => {

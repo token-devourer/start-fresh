@@ -260,7 +260,7 @@ export function RoomClient({ code }: RoomClientProps) {
 
       <ErrorToast />
 
-      <RulesModal open={showRules} onClose={() => setShowRules(false)} />
+      <RulesModal open={showRules} onClose={() => setShowRules(false)} settings={snapshot?.settings} />
 
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
@@ -290,6 +290,7 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   game_in_progress: "errors.gameInProgress",
   game_finished: "errors.gameFinished",
   max_players_too_low: "errors.maxPlayersTooLow",
+  deck_boxes_too_low: "errors.deckBoxesTooLow",
   one_call_pending: "errors.oneCallPending",
   one_window_active: "errors.oneWindowActive",
   player_not_found: "errors.playerNotFound",
@@ -349,6 +350,7 @@ function Lobby({
   const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
   const isHost = Boolean(me?.isHost);
+  const deckBoxMinimum = Math.max(1, Math.ceil(snapshot.players.length / 4));
   const [copied, setCopied] = useState<"code" | "link" | null>(null);
 
   function updateSetting(input: Partial<RoomSettings>) {
@@ -427,6 +429,15 @@ function Lobby({
       <aside className="panel grid content-start gap-4 p-4">
         <h2 className="display text-xl font-black">{t("lobby.settings")}</h2>
         <label className="grid gap-2">
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.gameMode")}</span>
+          <select className="field" disabled={!isHost} value={snapshot.settings.modeId} onChange={() => updateSetting({ modeId: "standard" })}>
+            <option value="standard">{t("lobby.modeStandard")}</option>
+            <option value="zero-seven" disabled>{t("lobby.modeZeroSeven")}</option>
+            <option value="explode-25" disabled>{t("lobby.modeExplode")}</option>
+            <option value="flip" disabled>{t("lobby.modeFlip")}</option>
+          </select>
+        </label>
+        <label className="grid gap-2">
           <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.maxPlayers")}</span>
           <select
             className="field"
@@ -468,6 +479,22 @@ function Lobby({
             <option value={500}>{t("lobby.points500")}</option>
           </select>
         </label>
+        <label className="grid gap-2">
+          <span className="text-sm font-bold text-[var(--muted)]">{t("lobby.deckBoxes")}</span>
+          <select
+            className="field"
+            disabled={!isHost}
+            value={Math.max(snapshot.settings.deckBoxes, deckBoxMinimum)}
+            onChange={(event) => updateSetting({ deckBoxes: Number(event.target.value) })}
+          >
+            {Array.from({ length: 6 }, (_, index) => index + 1).map((value) => (
+              <option key={value} value={value} disabled={value < deckBoxMinimum}>
+                {t("lobby.deckBoxOption", { count: value })}
+              </option>
+            ))}
+          </select>
+          <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.deckBoxesHint", { count: deckBoxMinimum })}</span>
+        </label>
         <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
           <input
             type="checkbox"
@@ -479,6 +506,32 @@ function Lobby({
           <span className="grid gap-1">
             <span className="text-sm font-bold text-[var(--text)]">{t("lobby.allowMidGameJoin")}</span>
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.allowMidGameJoinHint")}</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.jumpInEnabled}
+            onChange={(event) => updateSetting({ jumpInEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.jumpIn")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.jumpInHint")}</span>
+          </span>
+        </label>
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.stackingEnabled}
+            onChange={(event) => updateSetting({ stackingEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.stacking")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.stackingHint")}</span>
           </span>
         </label>
         {isHost ? (

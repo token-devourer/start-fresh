@@ -29,7 +29,17 @@ function snapshot(overrides: Partial<GameSnapshot>): GameSnapshot {
     seq: 1,
     code: "ABC123",
     phase: "playing",
-    settings: { modeId: "standard", maxPlayers: 10, turnTimeoutSec: 30, scoreTarget: 0, allowMidGameJoin: true, modeOptions: {} },
+    settings: {
+      modeId: "standard",
+      maxPlayers: 10,
+      turnTimeoutSec: 30,
+      scoreTarget: 0,
+      allowMidGameJoin: true,
+      jumpInEnabled: false,
+      stackingEnabled: false,
+      deckBoxes: 1,
+      modeOptions: {}
+    },
     players: [player({ id: "a", seat: 0 }), player({ id: "b", seat: 1 })],
     viewers: [],
     direction: 1,

@@ -3,17 +3,20 @@
 import { useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import type { RoomSettings } from "@congcard/shared";
 
 interface RulesModalProps {
   open: boolean;
   onClose: () => void;
+  settings?: RoomSettings;
 }
 
 // Rules live as an in-room overlay, not a separate route: closing it returns the
 // player to whatever room state they were in (lobby or board) instead of routing
 // away to the landing page.
-export function RulesModal({ open, onClose }: RulesModalProps) {
+export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const t = useTranslations("rules");
+  const deckBoxes = settings?.deckBoxes ?? 1;
 
   useEffect(() => {
     if (!open) {
@@ -74,6 +77,16 @@ export function RulesModal({ open, onClose }: RulesModalProps) {
             <section className="space-y-2">
               <h2 className="display text-xl font-bold">{t("turnsTitle")}</h2>
               <p className="text-[var(--muted)]">{t("turnsBody")}</p>
+            </section>
+
+            <section className="space-y-2">
+              <h2 className="display text-xl font-bold">{t("settingsTitle")}</h2>
+              <ul className="list-disc space-y-2 pl-5 text-[var(--muted)]">
+                <li>{t("modeRule")}</li>
+                <li>{settings?.jumpInEnabled ? t("jumpInOn") : t("jumpInOff")}</li>
+                <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
+                <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
+              </ul>
             </section>
 
             <section className="space-y-2">

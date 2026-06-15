@@ -11,13 +11,17 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
     return false;
   }
 
-  if (snapshot.currentPlayerId !== snapshot.self.id) {
-    return false;
-  }
-
   const handCard = snapshot.self.hand.find((item) => item.id === card.id);
   if (!handCard) {
     return false;
+  }
+
+  if (snapshot.pendingStack) {
+    return snapshot.pendingStack.targetPlayerId === snapshot.self.id && canStackCard(handCard, snapshot.pendingStack.kind);
+  }
+
+  if (snapshot.currentPlayerId !== snapshot.self.id) {
+    return Boolean(snapshot.settings.jumpInEnabled && snapshot.discardTop && isJumpInMatch(handCard, snapshot.discardTop));
   }
 
   if (snapshot.self.drawnCardId && snapshot.self.drawnCardId !== handCard.id) {
@@ -33,6 +37,14 @@ export function canPlayCard(snapshot: GameSnapshot | null, card: Card): boolean 
   }
 
   return handCard.color === snapshot.activeColor || handCard.value === snapshot.discardTop.value;
+}
+
+function canStackCard(card: Card, kind: "draw2" | "wild4"): boolean {
+  return kind === "draw2" ? card.value === "draw2" : card.value === "wild4";
+}
+
+function isJumpInMatch(card: Card, discardTop: Card): boolean {
+  return card.value === discardTop.value && card.color === discardTop.color;
 }
 
 export function playableCardInHand(snapshot: GameSnapshot | null, card: Card | null): Card | null {
