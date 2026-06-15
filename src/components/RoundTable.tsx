@@ -84,6 +84,7 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
 
         <div className="absolute left-1/2 top-1/2 z-[5] grid -translate-x-1/2 -translate-y-1/2 justify-items-center gap-2.5">
           <TurnChip player={activePlayer} isMyTurn={isMyTurn} deadline={snapshot.turnDeadline} />
+          {snapshot.pendingStack ? <StackPenaltyChip totalDraw={snapshot.pendingStack.totalDraw} kind={snapshot.pendingStack.kind} /> : null}
 
           <div className="flex items-center justify-center gap-4">
             <motion.button
@@ -138,6 +139,21 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
         </div>
       </div>
     </div>
+  );
+}
+
+function StackPenaltyChip({ totalDraw, kind }: { totalDraw: number; kind: "draw2" | "wild4" }) {
+  const t = useTranslations();
+
+  return (
+    <motion.div
+      key={totalDraw}
+      initial={{ scale: 0.72, opacity: 0, y: 8 }}
+      animate={{ scale: 1, opacity: 1, y: 0 }}
+      className="display rounded-full border-2 border-[var(--gold)] bg-[#2a1405]/90 px-4 py-1.5 text-sm font-black text-[var(--gold)] shadow-[0_0_24px_rgba(242,193,78,0.45)]"
+    >
+      {t("board.stackPenalty", { count: totalDraw, card: kind === "draw2" ? "+2" : "+4" })}
+    </motion.div>
   );
 }
 

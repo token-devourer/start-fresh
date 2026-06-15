@@ -154,6 +154,32 @@ describe("diffSnapshots", () => {
     expect(diffSnapshots(prev, stale).map((event) => event.type)).not.toContain("catchWindow");
   });
 
+  it("detects stack growth with capped pitch levels", () => {
+    const prev = snapshot({ pendingStack: { kind: "draw2", targetPlayerId: "b", totalDraw: 2 } });
+    const next = snapshot({ pendingStack: { kind: "draw2", targetPlayerId: "a", totalDraw: 10 } });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "stack")).toMatchObject({
+      totalDraw: 10,
+      level: 4
+    });
+  });
+
+  it("detects auto-resolved stack growth from the action log", () => {
+    const prev = snapshot({ actionLog: [{ seq: 1, type: "round", message: "Round 1 started.", at: 1 }] });
+    const next = snapshot({
+      actionLog: [
+        { seq: 1, type: "round", message: "Round 1 started.", at: 1 },
+        { seq: 2, type: "draw", message: "Ben must stack or draw 8 cards.", at: 2 },
+        { seq: 3, type: "draw", message: "Ben drew 8 stacked cards.", at: 3 }
+      ]
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "stack")).toMatchObject({
+      totalDraw: 8,
+      level: 4
+    });
+  });
+
   it("detects when you win a round or game", () => {
     const prev = snapshot({});
     const next = snapshot({
@@ -203,11 +229,12 @@ describe("diffSnapshots", () => {
       soundForEvent({ id: 3, type: "catchWindow", playerId: "b", nickname: "Ben", self: false, opensAt: 10, deadline: 20 })
     ).toBe("catch");
     expect(soundForEvent({ id: 4, type: "colorChange", color: "blue" })).toBe("wild");
-    expect(soundForEvent({ id: 5, type: "calledOne", nickname: "Ava" })).toBe("oneCalled");
-    expect(soundForEvent({ id: 6, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
-    expect(soundForEvent({ id: 7, type: "skip" })).toBe("skip");
-    expect(soundForEvent({ id: 8, type: "reverse", direction: -1 })).toBe("reverse");
-    expect(soundForEvent({ id: 9, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
-    expect(soundForEvent({ id: 10, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
+    expect(soundForEvent({ id: 5, type: "stack", totalDraw: 4, level: 2 })).toBe("stack");
+    expect(soundForEvent({ id: 6, type: "calledOne", nickname: "Ava" })).toBe("oneCalled");
+    expect(soundForEvent({ id: 7, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
+    expect(soundForEvent({ id: 8, type: "skip" })).toBe("skip");
+    expect(soundForEvent({ id: 9, type: "reverse", direction: -1 })).toBe("reverse");
+    expect(soundForEvent({ id: 10, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
+    expect(soundForEvent({ id: 11, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
 });

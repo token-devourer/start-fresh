@@ -293,6 +293,7 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   deck_boxes_too_low: "errors.deckBoxesTooLow",
   one_call_pending: "errors.oneCallPending",
   one_window_active: "errors.oneWindowActive",
+  stack_required: "errors.stackRequired",
   player_not_found: "errors.playerNotFound",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
@@ -575,7 +576,7 @@ function Board({
   const actionLocked = Boolean(snapshot.oneWindow);
   const canCallOne =
     isPlayer && !finished && snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
-  const canDraw = isMyTurn && !snapshot.self?.drawnCardId && !actionLocked;
+  const canDraw = isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
     isPlayer && !finished && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)

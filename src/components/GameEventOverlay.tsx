@@ -55,6 +55,10 @@ function toastDuration(event: UiEvent): number {
     return 2200;
   }
 
+  if (event.type === "stack") {
+    return 1400;
+  }
+
   return 1500;
 }
 
@@ -113,6 +117,13 @@ function toastContent(
         label: t("events.colorChange", { color: t(`colors.${event.color}`) }),
         background: COLOR_VAR[event.color] ?? "var(--gold)",
         color: event.color === "yellow" ? "#221706" : "white"
+      };
+    case "stack":
+      return {
+        label: `+${event.totalDraw}`,
+        sublabel: t("events.stackPenalty"),
+        background: "linear-gradient(180deg, #ffda5f, #d88a16)",
+        color: "#211405"
       };
     case "calledOne":
       return {

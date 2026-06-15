@@ -87,6 +87,7 @@
     "counterclockwise": "Counterclockwise",
     "drawPile": "{count} cards in draw pile",
     "draw": "Draw",
+    "stackPenalty": "Stack +{count} ({card})",
     "activeColor": "{color} active",
     "secondsLeft": "{seconds}s left",
     "noTimer": "No timer",
@@ -121,6 +122,7 @@
     "yourTurn": "YOUR TURN!",
     "youDrew": "You drew {count} cards!",
     "playerDrew": "{name} drew {count} cards",
+    "stackPenalty": "Stack is growing",
     "skip": "SKIPPED!",
     "reverse": "REVERSED!",
     "colorChange": "Color is now {color}",
@@ -188,6 +190,7 @@
     "deckBoxesTooLow": "Card boxes can't be lower than the current lobby minimum.",
     "oneCallPending": "One call is resolving — wait a moment.",
     "oneWindowActive": "Resolve ONE first.",
+    "stackRequired": "Stack a matching draw card.",
     "playerNotFound": "You are watching this room and cannot take player actions.",
     "invalidRoomCode": "Enter a valid 6-character room code.",
     "rateLimited": "Too many requests — wait a moment and try again."

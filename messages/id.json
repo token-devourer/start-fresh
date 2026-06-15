@@ -87,6 +87,7 @@
     "counterclockwise": "Lawan jarum jam",
     "drawPile": "{count} kartu di tumpukan",
     "draw": "Ambil",
+    "stackPenalty": "Stack +{count} ({card})",
     "activeColor": "Warna {color}",
     "secondsLeft": "{seconds} dtk",
     "noTimer": "Tanpa timer",
@@ -121,6 +122,7 @@
     "yourTurn": "GILIRANMU!",
     "youDrew": "Kamu menarik {count} kartu!",
     "playerDrew": "{name} menarik {count} kartu",
+    "stackPenalty": "Stack bertambah",
     "skip": "DILEWATI!",
     "reverse": "BALIK ARAH!",
     "colorChange": "Warna jadi {color}",
@@ -188,6 +190,7 @@
     "deckBoxesTooLow": "Card boxes can't be lower than the current lobby minimum.",
     "oneCallPending": "Panggilan SATU sedang dikunci — tunggu sebentar.",
     "oneWindowActive": "Resolve ONE first.",
+    "stackRequired": "Stack kartu draw yang cocok.",
     "playerNotFound": "Kamu sedang menonton ruangan ini dan tidak bisa melakukan aksi pemain.",
     "invalidRoomCode": "Masukkan kode ruangan 6 karakter yang valid.",
     "rateLimited": "Terlalu banyak permintaan — tunggu sebentar lalu coba lagi."

@@ -6,6 +6,7 @@ export type SoundName =
   | "oneCalled"
   | "catch"
   | "wild"
+  | "stack"
   | "penalty"
   | "skip"
   | "reverse"
@@ -41,6 +42,7 @@ export function soundForEvent(event: UiEvent): SoundName | null {
     case "skip": return "skip";
     case "reverse": return "reverse";
     case "colorChange": return "wild";
+    case "stack": return "stack";
     case "calledOne": return "oneCalled";
     case "catchWindow": return event.self ? "oneWindow" : "catch";
     case "roundWon": return "win";
@@ -55,18 +57,20 @@ export function playUiEventSounds(events: UiEvent[]): void {
     if (!sound) continue;
     if (event.type === "catchWindow" && typeof window !== "undefined") {
       window.setTimeout(() => playSound(sound), Math.max(0, event.opensAt - Date.now()));
+    } else if (event.type === "stack") {
+      playSound(sound, event.level);
     } else {
       playSound(sound);
     }
   }
 }
 
-export function playSound(name: SoundName): void {
+export function playSound(name: SoundName, level = 1): void {
   if (typeof window === "undefined" || isSoundMuted() || !hasAudioContext()) return;
   const ctx = getAudioContext();
   if (ctx.state === "suspended") void ctx.resume();
   const t0 = ctx.currentTime + 0.005;
-  render(name, ctx, t0);
+  render(name, ctx, t0, level);
 }
 
 function getAudioContext(): AudioContext {
@@ -163,7 +167,7 @@ function noise(
 const rand = (min: number, max: number) => min + Math.random() * (max - min);
 const pick = <T,>(arr: readonly T[]): T => arr[Math.floor(Math.random() * arr.length)];
 
-function render(name: SoundName, ctx: AudioContext, t: number): void {
+function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void {
   switch (name) {
     case "turn": {
       // Pick one of three short ascending motifs in major. Slight detune + jitter.
@@ -242,6 +246,16 @@ function render(name: SoundName, ctx: AudioContext, t: number): void {
       // Bell tail — pitch picked from last tone × harmonic.
       const tail = scale[scale.length - 1] * (Math.random() < 0.5 ? 2 : 3);
       tone(ctx, t + 0.2, { freq: tail, dur: rand(0.34, 0.46), type: "triangle", gain: rand(0.06, 0.1), lp: 6000 });
+      break;
+    }
+    case "stack": {
+      const pitchLevel = Math.min(4, Math.max(1, Math.round(level)));
+      const root = [392, 466, 554, 659][pitchLevel - 1] ?? 392;
+      const gain = 0.15 + pitchLevel * 0.025;
+      tone(ctx, t, { freq: root, dur: 0.09, type: "square", gain, lp: 2600 });
+      tone(ctx, t + 0.06, { freq: root * 1.5, dur: 0.11, type: "triangle", gain: gain + 0.02, lp: 4200 });
+      tone(ctx, t + 0.13, { freq: root * 2, dur: 0.16, type: "sine", gain: gain * 0.75, lp: 6000 });
+      noise(ctx, t + 0.015, { dur: 0.06, gain: 0.12 + pitchLevel * 0.025, hp: 1500 + pitchLevel * 250, lp: 8000 });
       break;
     }
     case "penalty": {

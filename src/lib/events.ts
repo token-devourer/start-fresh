@@ -6,6 +6,7 @@ export type UiEvent =
   | { id: number; type: "skip" }
   | { id: number; type: "reverse"; direction: 1 | -1 }
   | { id: number; type: "colorChange"; color: Color }
+  | { id: number; type: "stack"; totalDraw: number; level: number }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
@@ -108,6 +109,46 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
     events.push({ id: eventId(), type: "colorChange", color: next.activeColor });
   }
 
+  const lastPrevLogSeq = prev.actionLog.at(-1)?.seq ?? 0;
+  let stackLog: GameSnapshot["actionLog"][number] | undefined;
+  for (let index = next.actionLog.length - 1; index >= 0; index -= 1) {
+    const entry = next.actionLog[index]!;
+    if (entry.seq <= lastPrevLogSeq) {
+      break;
+    }
+
+    if (/must stack or draw \d+ cards/.test(entry.message)) {
+      stackLog = entry;
+      break;
+    }
+  }
+  const stackLogTotal = stackLog ? Number(/must stack or draw (\d+) cards/.exec(stackLog.message)?.[1] ?? 0) : 0;
+  let stackEventAdded = false;
+  if (stackLogTotal > 0) {
+    events.push({
+      id: eventId(),
+      type: "stack",
+      totalDraw: stackLogTotal,
+      level: stackPitchLevel(stackLogTotal)
+    });
+    stackEventAdded = true;
+  }
+
+  if (
+    !stackEventAdded &&
+    next.pendingStack &&
+    (!prev.pendingStack ||
+      next.pendingStack.totalDraw !== prev.pendingStack.totalDraw ||
+      next.pendingStack.targetPlayerId !== prev.pendingStack.targetPlayerId)
+  ) {
+    events.push({
+      id: eventId(),
+      type: "stack",
+      totalDraw: next.pendingStack.totalDraw,
+      level: stackPitchLevel(next.pendingStack.totalDraw)
+    });
+  }
+
   if (next.oneWindow && (next.oneWindow.playerId !== prev.oneWindow?.playerId || next.oneWindow.opensAt !== prev.oneWindow?.opensAt)) {
     const target = next.players.find((item) => item.id === next.oneWindow?.playerId);
     if (target && target.cardCount === 1 && !target.calledOne) {
@@ -128,4 +169,8 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   }
 
   return events;
+}
+
+function stackPitchLevel(totalDraw: number): number {
+  return Math.min(4, Math.max(1, Math.floor(totalDraw / 2)));
 }
