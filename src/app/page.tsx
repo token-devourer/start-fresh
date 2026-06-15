@@ -74,9 +74,11 @@ export default function HomePage() {
   return (
     <main className="app-shell py-6 md:py-10">
       <header className="flex items-center justify-between gap-3">
-        <div className="display flex items-center gap-2 text-lg font-black">
-          <img src="/icon.svg" alt="" className="h-10 w-10 rounded-xl" />
-          <span>{t("common.appName")}</span>
+        <div className="display flex items-center gap-3 text-lg font-black">
+          <img src="/icon.svg" alt="" className="h-11 w-11 rounded-2xl shadow-[0_6px_18px_rgba(242,193,78,0.35)]" />
+          <span className="bg-gradient-to-b from-[var(--gold-strong)] to-[var(--gold-deep)] bg-clip-text text-xl tracking-wide text-transparent">
+            {t("common.appName")}
+          </span>
         </div>
         <LanguageToggle />
       </header>
