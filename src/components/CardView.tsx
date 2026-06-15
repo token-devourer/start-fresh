@@ -1,4 +1,4 @@
-import type { Card, Color } from "@congcard/shared";
+import type { Card, CardValue, Color } from "@congcard/shared";
 import { cardText } from "@/lib/rules";
 
 interface CardViewProps {
@@ -11,12 +11,11 @@ interface CardViewProps {
   onClick?: () => void;
 }
 
-// The four play colors, used as gem accents on Wild cards.
 const WILD_GEMS: Array<{ key: Color; fill: string }> = [
-  { key: "red", fill: "#e64a3d" },
-  { key: "yellow", fill: "#f0c63a" },
-  { key: "green", fill: "#2faa6f" },
-  { key: "blue", fill: "#3d7edb" }
+  { key: "red", fill: "#ff4f5e" },
+  { key: "yellow", fill: "#ffd84d" },
+  { key: "green", fill: "#36e18e" },
+  { key: "blue", fill: "#58a6ff" }
 ];
 
 export function CardView({ card, hidden, small, playable, dimmed, disabled, onClick }: CardViewProps) {
@@ -46,15 +45,15 @@ export function CardView({ card, hidden, small, playable, dimmed, disabled, onCl
 
   const content = (
     <>
-      {/* Corner indices — small, elegant, with a tiny color pip underneath. */}
       <CornerIndex card={card} small={small} position="tl" />
       <CornerIndex card={card} small={small} position="br" />
 
-      {/* Heraldic cartouche: vertical gold-framed plaque holding the symbol + value. */}
       <div className="absolute inset-0 z-[5] grid place-items-center">
         <div className={`cartouche ${small ? "cartouche-sm" : ""}`}>
           {isWild ? (
-            <WildBadge small={small} />
+            <WildBadge small={small} value={card.value} />
+          ) : isActionValue(card.value) ? (
+            <ActionGlyph value={card.value} small={small} />
           ) : (
             <div className="grid place-items-center gap-1 text-center">
               <ColorSymbol color={card.color} small={small} />
@@ -93,83 +92,115 @@ function CornerIndex({ card, small, position }: { card: Card; small?: boolean; p
       : "bottom-1 right-1.5 items-end rotate-180";
   return (
     <div className={`absolute z-10 flex flex-col gap-0.5 ${place}`}>
-      <span
-        className={`font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] ${small ? "text-[11px]" : "text-base"}`}
-      >
-        {cornerText(card)}
-      </span>
+      {isActionValue(card.value) ? (
+        <ActionGlyph value={card.value} small corner />
+      ) : (
+        <span
+          className={`font-black leading-none drop-shadow-[0_1px_2px_rgba(0,0,0,0.6)] ${small ? "text-[11px]" : "text-base"}`}
+        >
+          {String(card.value)}
+        </span>
+      )}
     </div>
   );
 }
 
-// Corner indices use compact symbols so the rotated bottom-right copy stays legible.
-function cornerText(card: Card): string {
-  if (typeof card.value === "number") return String(card.value);
-  const symbols: Record<string, string> = {
-    skip: "Ø",
-    reverse: "⇄",
-    draw2: "+2",
-    wild: "✦",
-    wild4: "+4"
-  };
-  return symbols[String(card.value)] ?? cardText(card);
+function isActionValue(value: CardValue): value is Extract<CardValue, string> {
+  return typeof value === "string";
 }
 
-function WildBadge({ small }: { small?: boolean }) {
-  const gemSize = small ? 6 : 9;
+function WildBadge({ small, value }: { small?: boolean; value: CardValue }) {
+  const gemSize = small ? 7 : 10;
   return (
-    <div className="grid place-items-center gap-1.5 text-center">
-      {/* Four gems arranged in a diamond — the four colors, on their own onyx field. */}
-      <div className={`relative ${small ? "h-7 w-7" : "h-11 w-11"}`}>
-        {WILD_GEMS.map((gem, i) => {
-          const angle = (i / WILD_GEMS.length) * 360 - 90;
-          const r = small ? 12 : 18;
-          const x = Math.cos((angle * Math.PI) / 180) * r;
-          const y = Math.sin((angle * Math.PI) / 180) * r;
+    <div className="grid place-items-center gap-1 text-center">
+      <div className={`relative ${small ? "h-8 w-8" : "h-13 w-13"}`}>
+        {WILD_GEMS.map((gem, index) => {
+          const angle = (index / WILD_GEMS.length) * 360 - 90;
+          const radius = small ? 12 : 18;
+          const x = Math.cos((angle * Math.PI) / 180) * radius;
+          const y = Math.sin((angle * Math.PI) / 180) * radius;
           return (
             <span
               key={gem.key}
-              className="absolute left-1/2 top-1/2 block rounded-[2px] shadow-[0_0_6px_rgba(0,0,0,0.6)]"
+              className="absolute left-1/2 top-1/2 block rounded-[2px] shadow-[0_0_8px_rgba(0,0,0,0.55)]"
               style={{
                 width: gemSize,
                 height: gemSize,
-                background: `linear-gradient(135deg, ${gem.fill}, rgba(0,0,0,0.4))`,
+                background: `radial-gradient(circle at 28% 22%, #ffffff, ${gem.fill} 34%, rgba(0,0,0,0.28))`,
                 transform: `translate(-50%, -50%) translate(${x}px, ${y}px) rotate(45deg)`,
-                border: "1px solid rgba(255,255,255,0.35)"
+                border: "1px solid rgba(255,255,255,0.62)"
               }}
               aria-hidden="true"
             />
           );
         })}
-        {/* Central gilded star */}
         <span
           className="absolute left-1/2 top-1/2 grid place-items-center"
           style={{ transform: "translate(-50%,-50%)" }}
         >
-          <svg width={small ? 14 : 22} height={small ? 14 : 22} viewBox="0 0 24 24" aria-hidden="true">
+          <svg width={small ? 16 : 24} height={small ? 16 : 24} viewBox="0 0 24 24" aria-hidden="true">
             <defs>
               <linearGradient id="cc-star" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0" stopColor="#ffe39a" />
-                <stop offset="1" stopColor="#b9801f" />
+                <stop offset="0" stopColor="#fff4ba" />
+                <stop offset="0.52" stopColor="#ffd257" />
+                <stop offset="1" stopColor="#f69c25" />
               </linearGradient>
             </defs>
             <path
               d="M12 1l3 7.5L23 9l-6 5.5L18.5 23 12 18.5 5.5 23 7 14.5 1 9l8-0.5z"
               fill="url(#cc-star)"
               stroke="#5a3608"
-              strokeWidth="0.6"
+              strokeWidth="0.5"
               strokeLinejoin="round"
             />
           </svg>
         </span>
       </div>
-      <span
-        className={`font-black uppercase leading-none tracking-[0.08em] ${small ? "text-[10px]" : "text-sm"}`}
-        style={{ color: "#ffe39a", textShadow: "0 1px 0 rgba(0,0,0,0.6)" }}
-      >
-        Wild
-      </span>
+      {value === "wild4" ? <ActionGlyph value="draw2" small={small} corner /> : null}
     </div>
+  );
+}
+
+function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, string>; small?: boolean; corner?: boolean }) {
+  const size = corner ? (small ? 10 : 14) : small ? 24 : 40;
+  const stroke = corner ? 3.2 : 2.4;
+
+  if (value === "skip") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]">
+        <circle cx="24" cy="24" r="15" fill="none" stroke="currentColor" strokeWidth={stroke + 3} />
+        <path d="M14 34 34 14" fill="none" stroke="currentColor" strokeWidth={stroke + 4} strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (value === "reverse") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]">
+        <path d="M15 18h15c5 0 8 3 8 8s-3 8-8 8h-2" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
+        <path d="m18 10-8 8 8 8" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" strokeLinejoin="round" />
+        <path d="M33 30H18c-5 0-8-3-8-8s3-8 8-8h2" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
+        <path d="m30 38 8-8-8-8" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+
+  if (value === "draw2") {
+    return (
+      <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]">
+        <rect x="11" y="12" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(-8 20 24.5)" />
+        <rect x="19" y="9" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(8 28 21.5)" />
+        {!corner ? (
+          <path d="M24 32h10M29 27v10" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
+        ) : null}
+      </svg>
+    );
+  }
+
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="drop-shadow-[0_2px_4px_rgba(0,0,0,0.42)]">
+      <path d="M24 4 29 18 44 19 32 28 36 43 24 34 12 43 16 28 4 19 19 18Z" fill="currentColor" />
+    </svg>
   );
 }
 
