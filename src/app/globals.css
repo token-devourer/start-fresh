@@ -579,13 +579,61 @@ button.card-face.playable:active {
   }
 }
 
+/* ----- Reduced motion ----------------------------------------------------
+   Layered policy:
+   1. Kill flashy/oscillating motion (3D flip, traveling shine, urgent pop,
+      pulse rings, shake) — these are the comfort offenders.
+   2. Keep softer affordances readable: glow, color, lifted shadow, and a
+      tiny transition so state changes don't snap.
+   3. On hover/active, swap the 3D tilt for a flat lift so the press still
+      feels acknowledged without rotation triggering motion sickness. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
   *::after {
-    animation-duration: 0.01ms !important;
+    animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    /* Slightly above 0 so opacity/color changes don't flicker. */
+    transition-duration: 80ms !important;
+    transition-timing-function: ease-out !important;
+  }
+
+  /* Playable cards: keep the gold halo, drop the rocking + shine. */
+  .card-face.playable {
+    animation: none !important;
+    transform: translateY(-8px) !important;
+  }
+  .card-face.playable::before {
+    animation: none !important;
+    background:
+      linear-gradient(150deg, rgba(255, 255, 255, 0.32), transparent 42%),
+      radial-gradient(120% 80% at 50% 110%, rgba(0, 0, 0, 0.35), transparent 60%) !important;
+  }
+  button.card-face.playable:hover {
+    /* Flat lift instead of 3D flip — no rotateX/rotateY/rotateZ. */
+    transform: translateY(-12px) scale(1.03) !important;
+  }
+  button.card-face.playable:active {
+    transform: translateY(-6px) scale(0.99) !important;
+  }
+
+  /* Loud attention animations: keep static visual cue, drop loop. */
+  .urgent-action,
+  .pulse-gold,
+  .pulse-red,
+  .shake {
+    animation: none !important;
+  }
+
+  /* Active seat keeps its gold border but stops glowing in/out. */
+  .tableseat.active {
+    animation: none !important;
+    box-shadow: 0 0 0 2px rgba(242, 193, 78, 0.55) !important;
+  }
+
+  /* Button shine sweep off; hover stays as a brightness bump. */
+  .button::after {
+    display: none !important;
   }
 }
 
