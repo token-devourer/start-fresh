@@ -187,9 +187,13 @@ function DrawAmountLabel({ amount, small, corner }: { amount: "+2" | "+4"; small
 
 function DrawActionGlyph({ small }: { small?: boolean }) {
   return (
-    <div className="grid place-items-center gap-0.5 text-center">
-      <ActionGlyph value="draw2" small={small} />
-      <DrawAmountLabel amount="+2" small={small} />
+    <div className={`relative w-full text-center ${small ? "h-11" : "h-16"}`}>
+      <span className={`absolute left-1/2 -translate-x-1/2 ${small ? "top-0" : "top-1"}`}>
+        <ActionGlyph value="draw2" small={small} />
+      </span>
+      <span className={`absolute left-1/2 -translate-x-1/2 ${small ? "bottom-0" : "bottom-1"}`}>
+        <DrawAmountLabel amount="+2" small={small} />
+      </span>
     </div>
   );
 }
