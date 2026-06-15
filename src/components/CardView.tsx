@@ -90,9 +90,12 @@ function CornerIndex({ card, small, position }: { card: Card; small?: boolean; p
     position === "tl"
       ? "left-1.5 top-1 items-start"
       : "bottom-1 right-1.5 items-end rotate-180";
+  const amount = drawAmount(card.value);
   return (
     <div className={`absolute z-10 flex flex-col gap-0.5 ${place}`}>
-      {isActionValue(card.value) ? (
+      {amount ? (
+        <DrawAmountLabel amount={amount} small={small} corner />
+      ) : isActionValue(card.value) ? (
         <ActionGlyph value={card.value} small corner />
       ) : (
         <span
@@ -107,6 +110,12 @@ function CornerIndex({ card, small, position }: { card: Card; small?: boolean; p
 
 function isActionValue(value: CardValue): value is Extract<CardValue, string> {
   return typeof value === "string";
+}
+
+function drawAmount(value: CardValue): "+2" | "+4" | null {
+  if (value === "draw2") return "+2";
+  if (value === "wild4") return "+4";
+  return null;
 }
 
 function WildBadge({ small, value }: { small?: boolean; value: CardValue }) {
@@ -156,8 +165,21 @@ function WildBadge({ small, value }: { small?: boolean; value: CardValue }) {
           </svg>
         </span>
       </div>
-      {value === "wild4" ? <ActionGlyph value="draw2" small={small} corner /> : null}
+      {value === "wild4" ? <DrawAmountLabel amount="+4" small={small} /> : null}
     </div>
+  );
+}
+
+function DrawAmountLabel({ amount, small, corner }: { amount: "+2" | "+4"; small?: boolean; corner?: boolean }) {
+  return (
+    <span
+      className={[
+        "font-black leading-none text-current drop-shadow-[0_2px_4px_rgba(0,0,0,0.55)]",
+        corner ? (small ? "text-[10px]" : "text-[13px]") : small ? "text-sm" : "text-xl"
+      ].join(" ")}
+    >
+      {amount}
+    </span>
   );
 }
 
@@ -191,7 +213,17 @@ function ActionGlyph({ value, small, corner }: { value: Extract<CardValue, strin
         <rect x="11" y="12" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(-8 20 24.5)" />
         <rect x="19" y="9" width="18" height="25" rx="4" fill="none" stroke="currentColor" strokeWidth={stroke + 1.5} transform="rotate(8 28 21.5)" />
         {!corner ? (
-          <path d="M24 32h10M29 27v10" fill="none" stroke="currentColor" strokeWidth={stroke + 2} strokeLinecap="round" />
+          <text
+            x="24"
+            y="42"
+            fill="currentColor"
+            fontFamily="Arial Black, Arial, sans-serif"
+            fontSize="15"
+            fontWeight="900"
+            textAnchor="middle"
+          >
+            +2
+          </text>
         ) : null}
       </svg>
     );
