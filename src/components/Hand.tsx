@@ -105,6 +105,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
                   const playable = canPlayCard(snapshot, card);
                   const isDrawn = card.id === drawnId;
                   const cardIndex = rowIndex * 100 + index;
+                  const layer = cardIndex + (playable ? 1000 : 0) + (isDrawn ? 1000 : 0);
 
                   return (
                     <motion.div
@@ -122,7 +123,7 @@ export function Hand({ snapshot, isMyTurn, onPlay, onPassDrawn }: HandProps) {
                       style={{
                         marginLeft: index === 0 ? 0 : -overlap,
                         transformOrigin: "bottom center",
-                        zIndex: cardIndex
+                        zIndex: layer
                       }}
                     >
                       {isDrawn ? (
