@@ -216,6 +216,8 @@ export function RoomClient({ code }: RoomClientProps) {
     );
   }
 
+  const selfPlayer = snapshot?.players.find((player) => player.id === snapshot.self?.id);
+
   return (
     <main className="app-shell py-3 md:py-5">
       <header className="mb-3 flex flex-wrap items-center justify-between gap-3">
@@ -239,6 +241,19 @@ export function RoomClient({ code }: RoomClientProps) {
             />
             {t(`room.status.${status}`)}
           </span>
+          {selfPlayer ? (
+            <button
+              type="button"
+              className={`rounded-full border px-3 py-1 font-bold transition-colors ${
+                selfPlayer.away
+                  ? "border-[var(--gold)] bg-[var(--gold)] text-black"
+                  : "border-[var(--line)] text-[var(--text)] hover:border-[var(--gold)]"
+              }`}
+              onClick={() => send("room.setAway", { away: !selfPlayer.away })}
+            >
+              {selfPlayer.away ? t("room.return") : t("room.away")}
+            </button>
+          ) : null}
           <SoundToggle />
           <LanguageToggle />
           <button
@@ -296,6 +311,7 @@ const ERROR_MESSAGE_KEYS: Record<string, string> = {
   one_window_active: "errors.oneWindowActive",
   stack_required: "errors.stackRequired",
   player_not_found: "errors.playerNotFound",
+  player_away: "errors.playerAway",
   invalid_room_code: "errors.invalidRoomCode",
   rate_limited: "errors.rateLimited"
 };
@@ -382,7 +398,7 @@ function Lobby({
             <button className="button secondary !min-h-9 !px-3 text-sm" onClick={() => copy("link")}>
               {copied === "link" ? t("lobby.copied") : `🔗 ${t("lobby.copyLink")}`}
             </button>
-            <button className="button !min-h-9 !px-3 text-sm" onClick={() => send("room.ready", { ready: !me?.ready })}>
+            <button className="button !min-h-9 !px-3 text-sm" disabled={me?.away} onClick={() => send("room.ready", { ready: !me?.ready })}>
               {me?.ready ? t("lobby.notReady") : t("lobby.ready")}
             </button>
           </div>
@@ -411,8 +427,8 @@ function Lobby({
                         {player.ready ? `✓ ${t("lobby.statusReady")}` : t("lobby.statusWaiting")}
                       </span>
                       <span>·</span>
-                      <span className={player.connected ? "" : "text-red-300"}>
-                        {player.connected ? t("lobby.online") : t("lobby.offline")}
+                      <span className={!player.connected ? "text-red-300" : player.away ? "text-[var(--gold)]" : ""}>
+                        {!player.connected ? t("lobby.offline") : player.away ? t("lobby.away") : t("lobby.online")}
                       </span>
                     </div>
                   </div>
@@ -542,6 +558,19 @@ function Lobby({
             <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.stackingHint")}</span>
           </span>
         </label>
+        <label className="flex items-start gap-3 rounded-xl border border-[var(--line)] bg-black/20 p-3">
+          <input
+            type="checkbox"
+            className="mt-1 h-4 w-4 accent-[var(--gold)]"
+            disabled={!isHost}
+            checked={snapshot.settings.challengeEnabled}
+            onChange={(event) => updateSetting({ challengeEnabled: event.target.checked })}
+          />
+          <span className="grid gap-1">
+            <span className="text-sm font-bold text-[var(--text)]">{t("lobby.challenge")}</span>
+            <span className="text-xs leading-snug text-[var(--muted)]">{t("lobby.challengeHint")}</span>
+          </span>
+        </label>
         {isHost ? (
           <button className="button" disabled={snapshot.players.length < 2} onClick={() => send("game.start")}>
             {snapshot.players.length < 2 ? t("lobby.needPlayers") : t("lobby.start")}
@@ -574,31 +603,33 @@ function Board({
   const isPlayer = selfRole === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const finished = Boolean(me?.finishedRank);
+  const playerAway = Boolean(me?.away);
   const isMyTurn =
-    isPlayer && !finished && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
+    isPlayer && !finished && !playerAway && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
   const eventLocked = now < eventLockUntil;
-  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked;
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked || playerAway;
   const canCallOne =
     isPlayer &&
     !finished &&
+    !playerAway &&
     !eventLocked &&
     snapshot.oneWindow?.playerId === snapshot.self?.id &&
     snapshot.self?.hand.length === 1 &&
     !me?.calledOne;
   const canDraw = isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
-    isPlayer && !finished && !eventLocked && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && !finished && !playerAway && !eventLocked && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
   useEffect(() => {
-    if (!isPlayer || finished || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
+    if (!isPlayer || finished || playerAway || (selectedCard && !playableCardInHand(snapshot, selectedCard))) {
       setSelectedCard(null);
     }
-  }, [finished, isPlayer, selectedCard, setSelectedCard, snapshot]);
+  }, [finished, isPlayer, playerAway, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer || finished || eventLocked) {
+    if (!isPlayer || finished || playerAway || eventLocked) {
       return;
     }
 
@@ -616,7 +647,7 @@ function Board({
   }
 
   function chooseColor(color: Color) {
-    if (eventLocked) {
+    if (eventLocked || playerAway) {
       return;
     }
 
@@ -696,7 +727,7 @@ function Board({
       <FlightLayer />
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
-      {isPlayer && !finished ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
+      {isPlayer && !finished && !playerAway ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
         {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
@@ -731,6 +762,7 @@ function ViewerStatus({ snapshot, role, finishedRank }: { snapshot: GameSnapshot
                 <Avatar avatarId={player.avatarId} size={24} />
                 <span className="truncate font-bold">{player.nickname}</span>
                 {!player.connected ? <span className="text-xs text-red-300">{t("lobby.offline")}</span> : null}
+                {player.connected && player.away ? <span className="text-xs text-[var(--gold)]">{t("lobby.away")}</span> : null}
                 {player.autoPlay ? <span className="text-xs text-[var(--gold)]">{t("board.autoPlay")}</span> : null}
                   </span>
               <span className="tabular-nums text-[var(--muted)]">{player.score}</span>

@@ -10,6 +10,7 @@ const settings: RoomSettings = {
   allowMidGameJoin: true,
   jumpInEnabled: false,
   stackingEnabled: false,
+  challengeEnabled: true,
   deckBoxes: 1,
   modeOptions: {}
 };

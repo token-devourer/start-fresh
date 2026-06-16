@@ -47,7 +47,7 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
     <div
       ref={anchorRef(`seat:${player.id}`)}
       className={`tableseat ${seatActive ? "active" : ""} ${oneOpen && !finished ? "pulse-red" : ""} ${
-        player.connected ? "" : "offline"
+        !player.connected ? "offline" : player.away ? "away" : ""
       } ${shaking ? "shake" : ""}`}
     >
       <div className="relative mx-auto h-14 w-14">
@@ -90,6 +90,7 @@ export function PlayerSeat({ player, active, isSelf, oneOpen, turnDeadline, turn
         <div className="mt-0.5 text-center text-[10px] font-black text-green-200">{t("board.finishedRank", { rank: finishedRank ?? "" })}</div>
       ) : null}
       {!player.connected ? <div className="mt-0.5 text-center text-[10px] font-bold text-red-300">{t("lobby.offline")}</div> : null}
+      {player.connected && player.away ? <div className="mt-0.5 text-center text-[10px] font-bold text-[var(--gold)]">{t("lobby.away")}</div> : null}
     </div>
   );
 }

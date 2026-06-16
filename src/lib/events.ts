@@ -96,7 +96,7 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   }
 
   const topChanged = Boolean(next.discardTop) && next.discardTop?.id !== prev.discardTop?.id;
-  const matchLevel = topChanged ? sameValuePitchLevel(prev, next) : 0;
+  const matchLevel = topChanged ? sameValuePitchLevel(next) : 0;
   let matchChainHandled = false;
 
   if (topChanged && next.discardTop?.value === "skip") {
@@ -196,13 +196,25 @@ function stackPitchLevel(totalDraw: number): number {
   return Math.min(4, Math.max(1, Math.floor(totalDraw / 2)));
 }
 
-function sameValuePitchLevel(prev: GameSnapshot, next: GameSnapshot): number {
+function sameValuePitchLevel(next: GameSnapshot): number {
   const value = next.discardTop?.value;
-  if (value === undefined || prev.discardTop?.value !== value) {
+  if (value === undefined || latestPlayedValueFromLog(next) !== value) {
     return 0;
   }
 
-  return Math.min(4, Math.max(2, sameValueRunFromLog(next, value)));
+  const run = sameValueRunFromLog(next, value);
+  return run > 1 ? Math.min(4, run) : 0;
+}
+
+function latestPlayedValueFromLog(snapshot: GameSnapshot): CardValue | undefined {
+  for (let index = snapshot.actionLog.length - 1; index >= 0; index -= 1) {
+    const value = playedCardValue(snapshot.actionLog[index]?.message);
+    if (value !== undefined) {
+      return value;
+    }
+  }
+
+  return undefined;
 }
 
 function sameValueRunFromLog(snapshot: GameSnapshot, value: CardValue): number {

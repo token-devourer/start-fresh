@@ -47,6 +47,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       allowMidGameJoin: true,
       jumpInEnabled: false,
       stackingEnabled: false,
+      challengeEnabled: true,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -78,16 +79,60 @@ describe("Hand", () => {
 
     expect(screen.getByLabelText("Grouped hand")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Red: 5 cards/ })).toBeInTheDocument();
-    expect(screen.getByText("1 playable")).toBeInTheDocument();
+    expect(screen.getByText("Available 1")).toBeInTheDocument();
   });
 
-  it("expands a tapped group into readable cards with the drawn badge", () => {
+  it("opens the active color group by default", () => {
     renderHand();
 
-    fireEvent.click(screen.getByRole("button", { name: /Red: 5 cards/ }));
-
-    expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
+    expect(screen.getByTestId("hand-group-expanded")).toHaveAttribute("data-group-id", "red");
     expect(screen.getByText("Drawn card 1")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: /Play red/ }).length).toBeGreaterThan(0);
+  });
+
+  it("expands a tapped group into readable cards without remounting the tray", () => {
+    renderHand();
+
+    const tray = screen.getByTestId("hand-group-expanded");
+    fireEvent.click(screen.getByRole("button", { name: /Blue: 4 cards/ }));
+
+    expect(screen.getByTestId("hand-group-expanded")).toBe(tray);
+    expect(tray).toHaveAttribute("data-group-id", "blue");
+    expect(screen.getByRole("button", { name: "All" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /Play blue/ }).length).toBeGreaterThan(0);
+  });
+
+  it("keeps hover tray open until the pointer leaves grouped hand", () => {
+    renderHand();
+
+    const blue = screen.getByRole("button", { name: /Blue: 4 cards/ });
+    fireEvent.mouseEnter(blue);
+    expect(screen.getByTestId("hand-group-expanded")).toHaveAttribute("data-group-id", "blue");
+
+    fireEvent.mouseLeave(blue, { relatedTarget: screen.getByTestId("hand-group-expanded") });
+    expect(screen.getByTestId("hand-group-expanded")).toHaveAttribute("data-group-id", "blue");
+  });
+
+  it("closes the default tray until the active color changes", () => {
+    const { rerender } = renderHand();
+
+    fireEvent.click(screen.getByRole("button", { name: /Red: 5 cards/ }));
+    fireEvent.click(screen.getByRole("button", { name: "All" }));
+    expect(screen.getByTestId("hand-group-expanded")).toHaveAttribute("data-group-id", "");
+
+    rerender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <Hand snapshot={snapshot({ activeColor: "blue" })} isMyTurn actionLocked={false} onPlay={vi.fn()} onPassDrawn={vi.fn()} />
+      </NextIntlClientProvider>
+    );
+
+    expect(screen.getByTestId("hand-group-expanded")).toHaveAttribute("data-group-id", "blue");
+  });
+
+  it("keeps the available badge in pile metadata", () => {
+    renderHand();
+
+    const badge = screen.getByText("Available 1");
+    expect(badge.closest(".hand-group-meta")).not.toBeNull();
+    expect(badge.closest(".hand-group-preview")).toBeNull();
   });
 });

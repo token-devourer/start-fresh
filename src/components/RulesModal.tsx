@@ -18,6 +18,11 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
   const t = useTranslations("rules");
   const deckBoxes = settings?.deckBoxes ?? 1;
   const lastStand = settings?.scoreTarget === "lastStand";
+  const wild4RuleKey = settings?.stackingEnabled
+    ? "actionWild4Stacking"
+    : settings?.challengeEnabled ?? true
+      ? "actionWild4"
+      : "actionWild4NoChallenge";
 
   useEffect(() => {
     if (!open) {
@@ -87,6 +92,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{lastStand ? t("lastStandOn") : t("scoreRule")}</li>
                 <li>{settings?.jumpInEnabled ? t("jumpInOn") : t("jumpInOff")}</li>
                 <li>{settings?.stackingEnabled ? t("stackingOn") : t("stackingOff")}</li>
+                <li>{settings?.challengeEnabled ?? true ? t("challengeOn") : t("challengeOff")}</li>
                 <li>{t("deckBoxesRule", { count: deckBoxes })}</li>
               </ul>
             </section>
@@ -98,7 +104,7 @@ export function RulesModal({ open, onClose, settings }: RulesModalProps) {
                 <li>{t("actionReverse")}</li>
                 <li>{t("actionDraw2")}</li>
                 <li>{t("actionWild")}</li>
-                <li>{t("actionWild4")}</li>
+                <li>{t(wild4RuleKey)}</li>
               </ul>
             </section>
 

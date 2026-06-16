@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { Card, GameSnapshot } from "@congcard/shared";
+import type { Card, Color, GameSnapshot } from "@congcard/shared";
 import { canPlayCard } from "@/lib/rules";
 import { groupHand, shouldUseGroupedHand, type HandGroup, type HandGroupId } from "@/lib/handGroups";
 import { CardView } from "./CardView";
@@ -193,36 +193,55 @@ function GroupedHand({
   const t = useTranslations();
   const [hoveredGroup, setHoveredGroup] = useState<HandGroupId | null>(null);
   const [pinnedGroup, setPinnedGroup] = useState<HandGroupId | null>(null);
+  const [closedDefaultKey, setClosedDefaultKey] = useState<string | null>(null);
   const groups = groupHand(snapshot, actionLocked).filter((group) => group.count > 0);
-  const activeGroupId = pinnedGroup ?? hoveredGroup;
+  const groupIds = groups.map((group) => group.id).join("|");
+  const defaultKey = `${snapshot.activeColor ?? "none"}:${groups
+    .map((group) => `${group.id}:${group.cards.map((item) => item.card.id).join(",")}`)
+    .join("|")}`;
+  const defaultGroupId = defaultTrayGroupId(groups, snapshot.activeColor ?? null);
+  const activeGroupId = pinnedGroup ?? hoveredGroup ?? (closedDefaultKey === defaultKey ? null : defaultGroupId);
   const activeGroup = groups.find((group) => group.id === activeGroupId) ?? null;
+
+  useEffect(() => {
+    const existingIds = new Set(groups.map((group) => group.id));
+    setPinnedGroup((current) => (current && existingIds.has(current) ? current : null));
+    setHoveredGroup((current) => (current && existingIds.has(current) ? current : null));
+  }, [groupIds]);
 
   function groupLabel(id: HandGroupId): string {
     return t(`colors.${id}`);
   }
 
   function showGroup(group: HandGroup) {
-    setPinnedGroup((current) => (current === group.id ? null : group.id));
+    setPinnedGroup(group.id);
     setHoveredGroup(null);
+    setClosedDefaultKey(null);
+  }
+
+  function closeTray() {
+    setPinnedGroup(null);
+    setHoveredGroup(null);
+    setClosedDefaultKey(defaultKey);
   }
 
   return (
-    <div className="hand-group-mode">
-      <AnimatePresence initial={false}>
-        {activeGroup ? (
-          <ExpandedGroup
-            key={activeGroup.id}
-            group={activeGroup}
-            label={groupLabel(activeGroup.id)}
-            actionLocked={actionLocked}
-            onClose={() => {
-              setPinnedGroup(null);
-              setHoveredGroup(null);
-            }}
-            onPlay={onPlay}
-          />
-        ) : null}
-      </AnimatePresence>
+    <div
+      className="hand-group-mode"
+      onMouseLeave={(event) => {
+        const nextTarget = event.relatedTarget;
+        if (!(nextTarget instanceof Node) || !event.currentTarget.contains(nextTarget)) {
+          setHoveredGroup(null);
+        }
+      }}
+    >
+      <ExpandedGroup
+        group={activeGroup}
+        label={activeGroup ? groupLabel(activeGroup.id) : ""}
+        actionLocked={actionLocked}
+        onClose={closeTray}
+        onPlay={onPlay}
+      />
 
       <div className="hand-group-rail" aria-label={t("board.groupedHand")}>
         {groups.map((group) => (
@@ -231,7 +250,6 @@ function GroupedHand({
             type="button"
             className={`hand-group-pile ${group.playableCount > 0 ? "playable" : ""} ${activeGroupId === group.id ? "active" : ""}`}
             onMouseEnter={() => setHoveredGroup(group.id)}
-            onMouseLeave={() => setHoveredGroup((current) => (current === group.id && !pinnedGroup ? null : current))}
             onClick={() => showGroup(group)}
             aria-pressed={pinnedGroup === group.id}
             aria-label={`${groupLabel(group.id)}: ${t("board.groupCards", { count: group.count })}`}
@@ -240,15 +258,23 @@ function GroupedHand({
             <span className="hand-group-meta">
               <span className="display text-sm font-black">{groupLabel(group.id)}</span>
               <span className="text-xs font-bold text-[var(--muted)]">{t("board.groupCards", { count: group.count })}</span>
+              {group.playableCount > 0 ? (
+                <span className="hand-group-playable-badge">{t("board.groupPlayable", { count: group.playableCount })}</span>
+              ) : null}
             </span>
-            {group.playableCount > 0 ? (
-              <span className="hand-group-playable-badge">{t("board.groupPlayable", { count: group.playableCount })}</span>
-            ) : null}
           </button>
         ))}
       </div>
     </div>
   );
+}
+
+function defaultTrayGroupId(groups: HandGroup[], activeColor: Color | null): HandGroupId | null {
+  if (activeColor && groups.some((group) => group.id === activeColor)) {
+    return activeColor;
+  }
+
+  return groups.find((group) => group.playableCount > 0)?.id ?? null;
 }
 
 function PilePreview({ group }: { group: HandGroup }) {
@@ -279,29 +305,33 @@ function ExpandedGroup({
   onClose,
   onPlay
 }: {
-  group: HandGroup;
+  group: HandGroup | null;
   label: string;
   actionLocked: boolean;
   onClose: () => void;
   onPlay: (card: Card) => void;
 }) {
   const t = useTranslations();
-  const drawnCount = group.drawnCount;
+  const drawnCount = group?.drawnCount ?? 0;
 
   return (
     <motion.div
-      className="hand-group-expanded"
-      initial={{ opacity: 0, y: 18, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      exit={{ opacity: 0, y: 12, scale: 0.97 }}
+      className={`hand-group-expanded ${group ? "open" : ""}`}
+      data-testid="hand-group-expanded"
+      data-group-id={group?.id ?? ""}
+      aria-hidden={!group}
+      initial={false}
+      animate={group ? { opacity: 1, y: 0, scale: 1 } : { opacity: 0, y: 10, scale: 0.98 }}
       transition={{ type: "spring", stiffness: 360, damping: 28 }}
     >
+      {group ? (
+        <>
       <div className="hand-group-expanded-header">
         <div>
           <h3 className="display text-base font-black">{label}</h3>
           <p className="text-xs font-bold text-[var(--muted)]">
             {t("board.groupCards", { count: group.count })}
-            {group.playableCount > 0 ? ` · ${t("board.groupPlayable", { count: group.playableCount })}` : ""}
+            {group.playableCount > 0 ? ` / ${t("board.groupPlayable", { count: group.playableCount })}` : ""}
           </p>
         </div>
         <button type="button" className="button secondary !min-h-8 !px-3 text-xs" onClick={onClose}>
@@ -337,6 +367,8 @@ function ExpandedGroup({
           ))}
         </AnimatePresence>
       </div>
+        </>
+      ) : null}
     </motion.div>
   );
 }

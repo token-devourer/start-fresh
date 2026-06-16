@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useRoomStore } from "@/lib/store";
@@ -66,11 +66,16 @@ export function eventToastDurationMs(event: UiEvent): number {
 function EventToast({ event, onDone }: { event: UiEvent; onDone: () => void }) {
   const t = useTranslations();
   const reduceMotion = useReducedMotion();
+  const onDoneRef = useRef(onDone);
 
   useEffect(() => {
-    const id = window.setTimeout(onDone, eventToastDurationMs(event));
+    onDoneRef.current = onDone;
+  }, [onDone]);
+
+  useEffect(() => {
+    const id = window.setTimeout(() => onDoneRef.current(), eventToastDurationMs(event));
     return () => window.clearTimeout(id);
-  }, [event, onDone]);
+  }, [event]);
 
   const { label, sublabel, background, color } = toastContent(event, t);
   const wash = eventWash(event);

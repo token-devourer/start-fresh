@@ -10,6 +10,7 @@ function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer
     cardCount: 5,
     score: 0,
     connected: true,
+    away: false,
     isHost: false,
     ready: false,
     calledOne: false,
@@ -36,6 +37,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       allowMidGameJoin: true,
       jumpInEnabled: false,
       stackingEnabled: false,
+      challengeEnabled: true,
       deckBoxes: 1,
       modeOptions: {}
     },

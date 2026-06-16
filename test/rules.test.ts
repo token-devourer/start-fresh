@@ -20,6 +20,7 @@ function snapshot(overrides: Partial<GameSnapshot> = {}): GameSnapshot {
       allowMidGameJoin: true,
       jumpInEnabled: false,
       stackingEnabled: false,
+      challengeEnabled: true,
       deckBoxes: 1,
       modeOptions: {}
     },
@@ -117,6 +118,7 @@ describe("client rules", () => {
           cardCount: 0,
           score: 0,
           connected: true,
+          away: false,
           isHost: false,
           ready: false,
           calledOne: false,
