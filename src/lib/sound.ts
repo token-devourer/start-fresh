@@ -13,7 +13,9 @@ export type SoundName =
   | "skip"
   | "reverse"
   | "win"
-  | "lose";
+  | "lose"
+  | "uiHover"
+  | "uiClick";
 
 const STORAGE_KEY = "congcard:sound-muted";
 const MASTER = 0.55;
@@ -342,6 +344,45 @@ function render(name: SoundName, ctx: AudioContext, t: number, level = 1): void 
       tone(ctx, t + 0.13, { freq: 330, dur: 0.24, type: "triangle", gain: 0.13, lp: 2800 });
       tone(ctx, t + 0.28, { freq: 247, dur: 0.42, type: "sine",     gain: 0.15, lp: 2100, sweepTo: 220 });
       noise(ctx, t + 0.12, { dur: 0.16, gain: 0.06, hp: 280, lp: 1200 });
+      break;
+    }
+    case "uiHover": {
+      const root = pick([1480, 1568, 1660, 1760]);
+      tone(ctx, t, {
+        freq: root,
+        dur: 0.06,
+        type: "sine",
+        gain: rand(0.045, 0.07),
+        lp: 7000,
+        attack: 0.003
+      });
+      tone(ctx, t + 0.008, {
+        freq: root * 1.5,
+        dur: 0.05,
+        type: "triangle",
+        gain: rand(0.02, 0.035),
+        lp: 8000
+      });
+      break;
+    }
+    case "uiClick": {
+      noise(ctx, t, { dur: 0.025, gain: rand(0.18, 0.24), hp: 3200, lp: 9000 });
+      const root = pick([880, 988, 1046, 1175]);
+      tone(ctx, t + 0.005, {
+        freq: root,
+        dur: 0.09,
+        type: "triangle",
+        gain: rand(0.14, 0.18),
+        lp: 5500,
+        attack: 0.003
+      });
+      tone(ctx, t + 0.012, {
+        freq: root * 2,
+        dur: 0.16,
+        type: "sine",
+        gain: rand(0.06, 0.09),
+        lp: 7500
+      });
       break;
     }
   }

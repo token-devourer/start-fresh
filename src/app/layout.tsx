@@ -4,6 +4,7 @@ import { getLocale, getMessages } from "next-intl/server";
 import { Fredoka, Nunito } from "next/font/google";
 import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import { UiSoundLayer } from "@/components/UiSoundLayer";
 import "./globals.css";
 
 const fontDisplay = Fredoka({
@@ -36,6 +37,7 @@ export default async function RootLayout({
     <html lang={locale}>
       <body className={`${fontDisplay.variable} ${fontBody.variable}`}>
         <NextIntlClientProvider locale={locale} messages={messages}>
+          <UiSoundLayer />
           {children}
         </NextIntlClientProvider>
         <Analytics />

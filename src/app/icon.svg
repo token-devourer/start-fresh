@@ -40,7 +40,7 @@
     <rect x="142" y="146" width="228" height="308" rx="24" fill="none" stroke="url(#gold)" stroke-width="2.5" opacity="0.55"/>
 
     <!-- Big proud "CC" monogram, stylized -->
-    <g transform="translate(256 308)" fill="url(#gold)">
+    <g transform="translate(256 298)" fill="url(#gold)">
       <!-- left C -->
       <path d="M-104 -78c-44 0-78 36-78 80s34 80 78 80c26 0 46-10 60-26l-22-22c-9 11-22 18-38 18-27 0-48-22-48-50s21-50 48-50c16 0 29 7 38 18l22-22c-14-16-34-26-60-26z" transform="scale(0.62)"/>
       <!-- right C overlapping -->
