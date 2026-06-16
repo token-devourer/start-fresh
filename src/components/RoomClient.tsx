@@ -43,8 +43,7 @@ export function RoomClient({ code }: RoomClientProps) {
   const router = useRouter();
   const roomRef = useRef<Room | null>(null);
   const connectingRef = useRef(false);
-  const pingIdRef = useRef<number | null>(null);
-  const { snapshot, setSnapshot, setError, setPing, reset, ping } = useRoomStore();
+  const { snapshot, setSnapshot, setError, reset } = useRoomStore();
   const [status, setStatus] = useState<ConnectionStatus>("idle");
   // nickname is only set once confirmed (saved profile or submitted form);
   // draftNickname holds form input so typing does not auto-join the room.
@@ -65,10 +64,6 @@ export function RoomClient({ code }: RoomClientProps) {
     setProfileReady(true);
 
     return () => {
-      if (pingIdRef.current !== null) {
-        window.clearInterval(pingIdRef.current);
-        pingIdRef.current = null;
-      }
       roomRef.current?.leave();
       reset();
     };
@@ -137,16 +132,13 @@ export function RoomClient({ code }: RoomClientProps) {
         setError(payload.message ?? t("common.actionFailed"), payload.code);
       });
 
-      pingIdRef.current = window.setInterval(() => {
-        room.ping((ms: number) => setPing(ms));
-      }, 5000);
+      const pingInterval = window.setInterval(() => {
+        room.ping((ms: number) => room.send("room.ping", { ping: ms }));
+      }, 2000);
 
       room.onLeave(() => {
         setStatus("closed");
-        if (pingIdRef.current !== null) {
-          window.clearInterval(pingIdRef.current);
-          pingIdRef.current = null;
-        }
+        window.clearInterval(pingInterval);
         roomRef.current = null;
       });
     } catch (caught) {
@@ -296,9 +288,9 @@ export function RoomClient({ code }: RoomClientProps) {
       {!snapshot ? (
         <div className="panel grid min-h-[420px] place-items-center p-6 text-[var(--muted)]">{t("room.connecting")}</div>
       ) : snapshot.phase === "lobby" ? (
-        <Lobby snapshot={snapshot} code={code} send={send} ping={ping} />
+        <Lobby snapshot={snapshot} code={code} send={send} />
       ) : (
-        <Board snapshot={snapshot} send={send} onLeave={leaveToHome} selectedCard={selectedCard} setSelectedCard={setSelectedCard} ping={ping} />
+        <Board snapshot={snapshot} send={send} onLeave={leaveToHome} selectedCard={selectedCard} setSelectedCard={setSelectedCard} />
       )}
     </main>
   );
@@ -375,13 +367,11 @@ function ErrorToast() {
 export function Lobby({
   snapshot,
   code,
-  send,
-  ping = 0
+  send
 }: {
   snapshot: GameSnapshot;
   code: string;
   send: (type: string, payload?: unknown) => void;
-  ping?: number;
 }) {
   const t = useTranslations();
   const me = snapshot.players.find((player) => player.id === snapshot.self?.id);
@@ -439,7 +429,7 @@ export function Lobby({
                       {player.isHost ? "👑 " : ""}
                       {player.nickname}
                       {player.id === snapshot.self?.id ? <span className="text-[var(--gold)]"> ★</span> : null}
-                      {player.id === snapshot.self?.id && ping > 0 ? <PingBadge ping={ping} /> : null}
+                      {player.connected && player.ping > 0 ? <PingBadge ping={player.ping} /> : null}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
                       <span className={player.ready ? "font-bold text-green-300" : ""}>
@@ -607,15 +597,13 @@ function Board({
   send,
   onLeave,
   selectedCard,
-  setSelectedCard,
-  ping = 0
+  setSelectedCard
 }: {
   snapshot: GameSnapshot;
   send: (type: string, payload?: unknown) => void;
   onLeave: () => void;
   selectedCard: Card | null;
   setSelectedCard: (card: Card | null) => void;
-  ping?: number;
 }) {
   const t = useTranslations();
   const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
@@ -687,7 +675,7 @@ function Board({
     <>
       <section className="board">
         <div className="relative">
-          <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} ping={ping} />
+          <RoundTable snapshot={snapshot} isMyTurn={isMyTurn} canDraw={canDraw} onDraw={() => send("game.drawCard")} />
           {paused ? <PauseBanner /> : null}
           <LogTicker snapshot={snapshot} />
         </div>

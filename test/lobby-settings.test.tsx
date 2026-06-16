@@ -23,6 +23,7 @@ function player(overrides: Partial<PublicPlayer> & { id: string; seat: number })
     calledOne: false,
     autoPlay: false,
     missedDisconnectedTurns: 0,
+    ping: 0,
     ...rest
   };
 }

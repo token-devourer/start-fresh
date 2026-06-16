@@ -1,10 +1,9 @@
 "use client";
 
-const PING_COLOR =
-  (ping: number) =>
-    ping < 100 ? "text-green-300" :
-    ping < 200 ? "text-yellow-300" :
-                 "text-red-300";
+const PING_COLOR = (ping: number) =>
+  ping < 100 ? "text-green-300" :
+  ping < 200 ? "text-yellow-300" :
+               "text-red-300";
 
 export function PingBadge({ ping }: { ping: number }) {
   return (

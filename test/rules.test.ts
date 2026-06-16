@@ -155,6 +155,7 @@ describe("client rules", () => {
           calledOne: false,
           autoPlay: false,
           missedDisconnectedTurns: 0,
+          ping: 0,
           finishedRank: 1
         }
       ]

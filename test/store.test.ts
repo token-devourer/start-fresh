@@ -16,6 +16,7 @@ function player(overrides: Partial<PublicPlayer> & { id: string }): PublicPlayer
     calledOne: false,
     autoPlay: false,
     missedDisconnectedTurns: 0,
+    ping: 0,
     ...overrides
   };
 }

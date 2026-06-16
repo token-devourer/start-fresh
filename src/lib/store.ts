@@ -18,11 +18,9 @@ interface RoomStore {
   /** serverNow - Date.now(); add to local time to get server time. */
   clockOffset: number;
   eventLockUntil: number;
-  ping: number;
   setSnapshot: (snapshot: GameSnapshot | null) => void;
   dismissEvent: (id: number) => void;
   setError: (message: string, code?: string) => void;
-  setPing: (ping: number) => void;
   reset: () => void;
 }
 
@@ -36,7 +34,6 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
   error: null,
   clockOffset: 0,
   eventLockUntil: 0,
-  ping: 0,
   setSnapshot: (snapshot) => {
     if (!snapshot) {
       set({ snapshot: null, eventLockUntil: 0 });
@@ -55,7 +52,6 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     }));
   },
   dismissEvent: (id) => set((state) => ({ events: state.events.filter((event) => event.id !== id) })),
-  setPing: (ping) => set({ ping }),
   setError: (message, code) => {
     if (!message) {
       set({ error: null });
@@ -65,5 +61,5 @@ export const useRoomStore = create<RoomStore>((set, get) => ({
     nextErrorId += 1;
     set({ error: { id: nextErrorId, message, ...(code ? { code } : {}) } });
   },
-  reset: () => set({ snapshot: null, events: [], error: null, clockOffset: 0, eventLockUntil: 0, ping: 0 })
+  reset: () => set({ snapshot: null, events: [], error: null, clockOffset: 0, eventLockUntil: 0 })
 }));
