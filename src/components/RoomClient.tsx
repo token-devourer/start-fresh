@@ -29,6 +29,7 @@ import { RulesModal } from "./RulesModal";
 import { SoundToggle } from "./SoundToggle";
 import { TurnBanner } from "./TurnBanner";
 import { UnoButton } from "./UnoButton";
+import { PingBadge } from "./PingBadge";
 import { unlockSound } from "@/lib/sound";
 
 interface RoomClientProps {
@@ -130,8 +131,14 @@ export function RoomClient({ code }: RoomClientProps) {
       room.onMessage("error", (payload: { code?: string; message?: string }) => {
         setError(payload.message ?? t("common.actionFailed"), payload.code);
       });
+
+      const pingInterval = window.setInterval(() => {
+        room.ping((ms: number) => room.send("room.ping", { ping: ms }));
+      }, 5000);
+
       room.onLeave(() => {
         setStatus("closed");
+        window.clearInterval(pingInterval);
         roomRef.current = null;
       });
     } catch (caught) {
@@ -422,6 +429,7 @@ export function Lobby({
                       {player.isHost ? "👑 " : ""}
                       {player.nickname}
                       {player.id === snapshot.self?.id ? <span className="text-[var(--gold)]"> ★</span> : null}
+                      {player.connected && player.ping > 0 ? <PingBadge ping={player.ping} /> : null}
                     </div>
                     <div className="flex items-center gap-2 text-sm text-[var(--muted)]">
                       <span className={player.ready ? "font-bold text-green-300" : ""}>
