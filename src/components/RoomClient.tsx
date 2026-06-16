@@ -16,6 +16,7 @@ import { LOG_ICON, translateLog, type Translate } from "@/lib/log";
 import { needsColor, playableCardInHand } from "@/lib/rules";
 import { clearRoomSession, reconnectStorageKey, resumeStorageKey } from "@/lib/session";
 import { useRoomStore } from "@/lib/store";
+import { useNow } from "@/lib/useNow";
 import { ChallengeModal } from "./ChallengeModal";
 import { ColorPicker } from "./ColorPicker";
 import { FlightLayer } from "./FlightLayer";
@@ -567,18 +568,26 @@ function Board({
   setSelectedCard: (card: Card | null) => void;
 }) {
   const t = useTranslations();
+  const eventLockUntil = useRoomStore((state) => state.eventLockUntil);
+  const now = useNow(100);
   const selfRole = snapshot.self?.role ?? "spectator";
   const isPlayer = selfRole === "player";
   const me = isPlayer ? snapshot.players.find((player) => player.id === snapshot.self?.id) : undefined;
   const finished = Boolean(me?.finishedRank);
   const isMyTurn =
     isPlayer && !finished && snapshot.phase === "playing" && snapshot.currentPlayerId === snapshot.self?.id && !snapshot.pendingChallenge;
-  const actionLocked = Boolean(snapshot.oneWindow);
+  const eventLocked = now < eventLockUntil;
+  const actionLocked = Boolean(snapshot.oneWindow) || eventLocked;
   const canCallOne =
-    isPlayer && !finished && snapshot.oneWindow?.playerId === snapshot.self?.id && snapshot.self?.hand.length === 1 && !me?.calledOne;
+    isPlayer &&
+    !finished &&
+    !eventLocked &&
+    snapshot.oneWindow?.playerId === snapshot.self?.id &&
+    snapshot.self?.hand.length === 1 &&
+    !me?.calledOne;
   const canDraw = isMyTurn && !snapshot.pendingStack && !snapshot.self?.drawnCardId && !actionLocked;
   const oneTarget =
-    isPlayer && !finished && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
+    isPlayer && !finished && !eventLocked && snapshot.oneWindow && snapshot.oneWindow.playerId !== me?.id
       ? snapshot.players.find((player) => player.id === snapshot.oneWindow?.playerId && player.cardCount === 1 && !player.calledOne)
       : undefined;
 
@@ -589,7 +598,7 @@ function Board({
   }, [finished, isPlayer, selectedCard, setSelectedCard, snapshot]);
 
   function play(card: Card) {
-    if (!isPlayer || finished) {
+    if (!isPlayer || finished || eventLocked) {
       return;
     }
 
@@ -607,6 +616,10 @@ function Board({
   }
 
   function chooseColor(color: Color) {
+    if (eventLocked) {
+      return;
+    }
+
     const playable = playableCardInHand(snapshot, selectedCard);
     if (!playable) {
       setSelectedCard(null);
@@ -668,6 +681,7 @@ function Board({
                 <Hand
                   snapshot={snapshot}
                   isMyTurn={isMyTurn}
+                  actionLocked={actionLocked}
                   onPlay={play}
                   onPassDrawn={() => send("game.playDrawn", { play: false })}
                 />
@@ -682,10 +696,10 @@ function Board({
       <FlightLayer />
       <TurnBanner isMyTurn={isMyTurn} />
       <GameEventOverlay />
-      {isPlayer && !finished ? <ChallengeModal snapshot={snapshot} send={send} /> : null}
+      {isPlayer && !finished ? <ChallengeModal snapshot={snapshot} send={send} actionLocked={eventLocked} /> : null}
       <RoundEndOverlay snapshot={snapshot} send={send} onLeave={onLeave} />
       <AnimatePresence>
-        {selectedCard ? <ColorPicker onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
+        {selectedCard ? <ColorPicker disabled={eventLocked} onPick={chooseColor} onCancel={() => setSelectedCard(null)} /> : null}
       </AnimatePresence>
     </>
   );

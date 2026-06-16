@@ -4,14 +4,16 @@ import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import type { Card, GameSnapshot } from "@congcard/shared";
 import { anchorRect } from "@/lib/anchors";
+import { playSound } from "@/lib/sound";
 import { useRoomStore } from "@/lib/store";
 
 type Flight =
   | { kind: "card"; card: Card; from: string; to: string; delay?: number }
-  | { kind: "back"; from: string; to: string; delay?: number }
+  | { kind: "back"; from: string; to: string; delay?: number; drawIndex?: number; drawTotal?: number }
   | { kind: "token"; from: string; to: string; delay?: number };
 
-const MAX_BURST = 6;
+const MAX_DRAW_FLIGHTS = 12;
+const DRAW_STAGGER_SEC = 0.22;
 
 // Derives card movements by diffing consecutive snapshots (the server sends no
 // structured events) and flies GSAP-animated clones between registered anchors.
@@ -51,8 +53,16 @@ export function FlightLayer() {
         const gained = player.cardCount - before.cardCount;
         if (gained > 0) {
           const to = player.id === snapshot.self?.id ? "hand" : `seat:${player.id}`;
-          for (let i = 0; i < Math.min(gained, MAX_BURST); i += 1) {
-            flights.push({ kind: "back", from: "draw", to, delay: i * 0.09 });
+          const visibleGained = Math.min(gained, MAX_DRAW_FLIGHTS);
+          for (let i = 0; i < visibleGained; i += 1) {
+            flights.push({
+              kind: "back",
+              from: "draw",
+              to,
+              delay: i * DRAW_STAGGER_SEC,
+              drawIndex: i + 1,
+              drawTotal: gained
+            });
           }
         }
       }
@@ -96,6 +106,12 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
     el.className = `card-face small ${flight.card.color ? `card-${flight.card.color}` : "card-wild"}`;
   } else if (flight.kind === "back") {
     el.className = "card-face small card-back";
+    if (flight.drawTotal && flight.drawTotal > 1 && flight.drawIndex) {
+      const badge = document.createElement("span");
+      badge.className = "flight-draw-badge";
+      badge.textContent = `+${flight.drawIndex}`;
+      el.appendChild(badge);
+    }
   } else {
     el.className = "turn-token";
   }
@@ -111,6 +127,13 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
   const endY = to.top + to.height / 2 - el.offsetHeight / 2;
   const lift = Math.max(40, Math.abs(endY - startY) * 0.35);
   const spin = flight.kind === "token" ? 0 : startX < endX ? 14 : -14;
+  const firstLegDuration = flight.kind === "back" ? 0.42 : 0.3;
+  const secondLegDuration = flight.kind === "back" ? 0.38 : 0.3;
+  const fadeDuration = flight.kind === "back" ? 0.18 : 0.16;
+  if (flight.kind === "back") {
+    const pitchLevel = Math.min(4, Math.max(1, flight.drawIndex ?? 1));
+    window.setTimeout(() => playSound("drawTick", pitchLevel), Math.max(0, (flight.delay ?? 0) * 1000));
+  }
 
   gsap.set(el, { x: startX, y: startY, scale: flight.kind === "token" ? 0.6 : 0.72, opacity: 0.95, rotation: 0 });
   gsap.to(el, {
@@ -121,11 +144,11 @@ function spawnFlight(layer: HTMLDivElement, flight: Flight) {
         y: Math.min(startY, endY) - lift,
         scale: flight.kind === "token" ? 1 : 1.04,
         rotation: spin,
-        duration: 0.3,
+        duration: firstLegDuration,
         ease: "power2.out"
       },
-      { x: endX, y: endY, scale: 1, rotation: 0, duration: 0.3, ease: "power2.in" },
-      { opacity: 0, scale: 0.8, duration: 0.16, ease: "power1.in" }
+      { x: endX, y: endY, scale: 1, rotation: 0, duration: secondLegDuration, ease: "power2.in" },
+      { opacity: 0, scale: 0.8, duration: fadeDuration, ease: "power1.in" }
     ],
     onComplete: () => el.remove()
   });

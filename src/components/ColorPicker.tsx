@@ -6,11 +6,12 @@ import type { Color } from "@congcard/shared";
 import { COLORS } from "@congcard/shared";
 
 interface ColorPickerProps {
+  disabled?: boolean;
   onPick: (color: Color) => void;
   onCancel: () => void;
 }
 
-export function ColorPicker({ onPick, onCancel }: ColorPickerProps) {
+export function ColorPicker({ disabled = false, onPick, onCancel }: ColorPickerProps) {
   const t = useTranslations();
 
   return (
@@ -42,6 +43,7 @@ export function ColorPicker({ onPick, onCancel }: ColorPickerProps) {
                 color === "yellow" ? "text-[#221706]" : "text-white"
               }`}
               style={{ boxShadow: "var(--shadow-pop)" }}
+              disabled={disabled}
               onClick={() => onPick(color)}
             >
               {t(`colors.${color}`)}

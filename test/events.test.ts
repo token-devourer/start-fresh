@@ -164,6 +164,50 @@ describe("diffSnapshots", () => {
     });
   });
 
+  it("detects repeated same-value plays as a rising pitch chain", () => {
+    const prev = snapshot({
+      discardTop: card({ id: "top-red-5", color: "red", value: 5 }),
+      actionLog: [{ seq: 1, type: "play", message: "A played red 5.", at: 1 }]
+    });
+    const next = snapshot({
+      discardTop: card({ id: "top-blue-5", color: "blue", value: 5 }),
+      actionLog: [
+        { seq: 1, type: "play", message: "A played red 5.", at: 1 },
+        { seq: 2, type: "play", message: "B played blue 5.", at: 2 }
+      ]
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "matchChain")).toMatchObject({
+      value: 5,
+      level: 2
+    });
+  });
+
+  it("raises action sound level for repeated icon cards", () => {
+    const prev = snapshot({
+      discardTop: card({ id: "top-red-reverse", color: "red", value: "reverse" }),
+      actionLog: [
+        { seq: 1, type: "play", message: "A played red reverse.", at: 1 },
+        { seq: 2, type: "reverse", message: "Turn direction changed.", at: 2 }
+      ]
+    });
+    const next = snapshot({
+      direction: -1,
+      discardTop: card({ id: "top-blue-reverse", color: "blue", value: "reverse" }),
+      actionLog: [
+        { seq: 1, type: "play", message: "A played red reverse.", at: 1 },
+        { seq: 2, type: "reverse", message: "Turn direction changed.", at: 2 },
+        { seq: 3, type: "play", message: "B played blue reverse.", at: 3 },
+        { seq: 4, type: "reverse", message: "Turn direction changed.", at: 4 }
+      ]
+    });
+
+    expect(diffSnapshots(prev, next).find((event) => event.type === "reverse")).toMatchObject({
+      direction: -1,
+      level: 2
+    });
+  });
+
   it("detects auto-resolved stack growth from the action log", () => {
     const prev = snapshot({ actionLog: [{ seq: 1, type: "round", message: "Round 1 started.", at: 1 }] });
     const next = snapshot({
@@ -230,11 +274,12 @@ describe("diffSnapshots", () => {
     ).toBe("catch");
     expect(soundForEvent({ id: 4, type: "colorChange", color: "blue" })).toBe("wild");
     expect(soundForEvent({ id: 5, type: "stack", totalDraw: 4, level: 2 })).toBe("stack");
-    expect(soundForEvent({ id: 6, type: "calledOne", nickname: "Ava" })).toBe("oneCalled");
-    expect(soundForEvent({ id: 7, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
-    expect(soundForEvent({ id: 8, type: "skip" })).toBe("skip");
-    expect(soundForEvent({ id: 9, type: "reverse", direction: -1 })).toBe("reverse");
-    expect(soundForEvent({ id: 10, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
-    expect(soundForEvent({ id: 11, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
+    expect(soundForEvent({ id: 6, type: "matchChain", value: 7, level: 3 })).toBe("matchChain");
+    expect(soundForEvent({ id: 7, type: "calledOne", nickname: "Ava" })).toBe("oneCalled");
+    expect(soundForEvent({ id: 8, type: "penalty", playerId: "a", nickname: "Ava", count: 2, self: true })).toBe("penalty");
+    expect(soundForEvent({ id: 9, type: "skip" })).toBe("skip");
+    expect(soundForEvent({ id: 10, type: "reverse", direction: -1 })).toBe("reverse");
+    expect(soundForEvent({ id: 11, type: "roundWon", winnerId: "a", nickname: "Ava", gameEnd: true })).toBe("win");
+    expect(soundForEvent({ id: 12, type: "roundLost", winnerId: "b", nickname: "Ben", gameEnd: false })).toBe("lose");
   });
 });

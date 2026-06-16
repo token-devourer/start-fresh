@@ -265,6 +265,145 @@ button:disabled {
   overflow: visible;
 }
 
+.hand-group-mode {
+  display: grid;
+  gap: 12px;
+  padding: 6px 4px 2px;
+}
+
+.hand-group-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  justify-content: center;
+  gap: 10px;
+  max-height: 168px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(242, 193, 78, 0.35) transparent;
+}
+
+.hand-group-pile {
+  position: relative;
+  display: grid;
+  min-height: 120px;
+  width: min(176px, calc(50vw - 28px));
+  min-width: 136px;
+  grid-template-rows: 68px auto;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background:
+    radial-gradient(180px 90px at 50% 0%, rgba(242, 193, 78, 0.13), transparent 68%),
+    rgba(6, 12, 8, 0.52);
+  color: var(--text);
+  cursor: pointer;
+  padding: 10px;
+  text-align: left;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease,
+    filter 150ms ease;
+}
+
+.hand-group-pile:hover,
+.hand-group-pile.active {
+  transform: translateY(-3px);
+  border-color: rgba(242, 193, 78, 0.75);
+  filter: brightness(1.08);
+}
+
+.hand-group-pile.playable {
+  border-color: rgba(242, 193, 78, 0.68);
+  box-shadow:
+    0 0 0 1px rgba(242, 193, 78, 0.28),
+    0 0 24px rgba(242, 193, 78, 0.24);
+}
+
+.hand-group-preview {
+  position: relative;
+  height: 66px;
+  width: 100%;
+  display: block;
+}
+
+.hand-group-card-preview {
+  position: absolute;
+  left: calc(50% - 42px);
+  bottom: -4px;
+  display: block;
+  transform-origin: bottom center;
+}
+
+.hand-group-meta {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.hand-group-playable-badge {
+  position: absolute;
+  right: 8px;
+  top: 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold-strong), var(--gold));
+  color: #1e1404;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  padding: 5px 7px;
+  box-shadow: 0 0 16px rgba(242, 193, 78, 0.45);
+}
+
+.hand-group-expanded {
+  display: grid;
+  gap: 10px;
+  max-height: min(270px, 34dvh);
+  overflow: hidden;
+  border: 1px solid rgba(242, 193, 78, 0.36);
+  border-radius: 18px;
+  background:
+    radial-gradient(360px 160px at 50% 0%, rgba(242, 193, 78, 0.13), transparent 72%),
+    rgba(3, 9, 6, 0.42);
+  padding: 10px;
+  box-shadow:
+    0 0 0 1px rgba(242, 193, 78, 0.12),
+    0 18px 44px rgba(0, 0, 0, 0.28);
+}
+
+.hand-group-expanded-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0 2px;
+}
+
+.hand-group-expanded-cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: end;
+  gap: 16px 12px;
+  max-height: min(210px, 26dvh);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 18px 6px 8px;
+}
+
+.hand-group-card {
+  position: relative;
+  display: grid;
+  place-items: center;
+}
+
+.hand-group-expanded + .hand-group-rail {
+  max-height: 112px;
+}
+
 /* ---------- Cards ---------- */
 
 .card-face {
@@ -339,6 +478,25 @@ button.card-face.playable:active {
 
 .card-face.dimmed {
   filter: grayscale(0.45) brightness(0.7);
+}
+
+.flight-draw-badge {
+  position: absolute;
+  right: -8px;
+  top: -8px;
+  z-index: 40;
+  display: grid;
+  min-width: 24px;
+  height: 24px;
+  place-items: center;
+  border: 2px solid rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--gold-strong), var(--gold));
+  color: #211405;
+  font-size: 12px;
+  font-weight: 1000;
+  line-height: 1;
+  box-shadow: 0 0 20px rgba(242, 193, 78, 0.6);
 }
 
 .card-face::before {
@@ -563,6 +721,36 @@ button.card-face.playable:active {
     width: 46px;
   }
 
+  .hand-group-rail {
+    max-height: 148px;
+    gap: 8px;
+  }
+
+  .hand-group-pile {
+    min-height: 108px;
+    min-width: 118px;
+    width: calc(50vw - 22px);
+    grid-template-rows: 58px auto;
+    padding: 8px;
+  }
+
+  .hand-group-card-preview {
+    left: calc(50% - 34px);
+  }
+
+  .hand-group-expanded {
+    max-height: min(250px, 34dvh);
+  }
+
+  .hand-group-expanded-cards {
+    max-height: min(188px, 25dvh);
+    gap: 14px 10px;
+  }
+
+  .hand-group-expanded + .hand-group-rail {
+    max-height: 96px;
+  }
+
   .tableseat {
     width: 84px;
     padding: 4px 3px 5px;
@@ -579,6 +767,14 @@ button.card-face.playable:active {
 
   .card-face.small {
     width: 44px;
+  }
+
+  .hand-group-expanded {
+    max-height: min(232px, 36dvh);
+  }
+
+  .hand-group-expanded-cards {
+    max-height: min(170px, 26dvh);
   }
 
   .tableseat {

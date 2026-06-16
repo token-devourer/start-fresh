@@ -1,16 +1,20 @@
-import type { Color, GameSnapshot } from "@congcard/shared";
+import type { CardValue, Color, GameSnapshot } from "@congcard/shared";
 
 export type UiEvent =
   | { id: number; type: "yourTurn" }
   | { id: number; type: "penalty"; playerId: string; nickname: string; count: number; self: boolean }
-  | { id: number; type: "skip" }
-  | { id: number; type: "reverse"; direction: 1 | -1 }
-  | { id: number; type: "colorChange"; color: Color }
+  | { id: number; type: "skip"; level?: number }
+  | { id: number; type: "reverse"; direction: 1 | -1; level?: number }
+  | { id: number; type: "colorChange"; color: Color; level?: number }
   | { id: number; type: "stack"; totalDraw: number; level: number }
+  | { id: number; type: "matchChain"; value: CardValue; level: number }
   | { id: number; type: "calledOne"; nickname: string }
   | { id: number; type: "catchWindow"; playerId: string; nickname: string; self: boolean; opensAt: number; deadline: number }
   | { id: number; type: "roundWon"; winnerId: string; nickname: string; gameEnd: boolean }
   | { id: number; type: "roundLost"; winnerId: string; nickname: string; gameEnd: boolean };
+
+const ACTION_LOCK_EVENT_TYPES = new Set<UiEvent["type"]>(["skip", "reverse", "penalty", "stack", "colorChange"]);
+const ACTION_LOCK_MS = 700;
 
 let nextEventId = 1;
 
@@ -92,13 +96,17 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   }
 
   const topChanged = Boolean(next.discardTop) && next.discardTop?.id !== prev.discardTop?.id;
+  const matchLevel = topChanged ? sameValuePitchLevel(prev, next) : 0;
+  let matchChainHandled = false;
 
   if (topChanged && next.discardTop?.value === "skip") {
-    events.push({ id: eventId(), type: "skip" });
+    events.push({ id: eventId(), type: "skip", ...(matchLevel > 1 ? { level: matchLevel } : {}) });
+    matchChainHandled = true;
   }
 
   if (next.direction !== prev.direction) {
-    events.push({ id: eventId(), type: "reverse", direction: next.direction });
+    events.push({ id: eventId(), type: "reverse", direction: next.direction, ...(matchLevel > 1 ? { level: matchLevel } : {}) });
+    matchChainHandled = topChanged && next.discardTop?.value === "reverse" ? true : matchChainHandled;
   }
 
   if (
@@ -106,7 +114,12 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
     (next.discardTop?.value === "wild" || next.discardTop?.value === "wild4") &&
     next.activeColor
   ) {
-    events.push({ id: eventId(), type: "colorChange", color: next.activeColor });
+    events.push({ id: eventId(), type: "colorChange", color: next.activeColor, ...(matchLevel > 1 ? { level: matchLevel } : {}) });
+    matchChainHandled = true;
+  }
+
+  if (topChanged && matchLevel > 1 && !matchChainHandled && next.discardTop) {
+    events.push({ id: eventId(), type: "matchChain", value: next.discardTop.value, level: matchLevel });
   }
 
   const lastPrevLogSeq = prev.actionLog.at(-1)?.seq ?? 0;
@@ -171,6 +184,51 @@ export function diffSnapshots(prev: GameSnapshot | null, next: GameSnapshot): Ui
   return events;
 }
 
+export function eventActionLockMs(events: UiEvent[]): number {
+  return events.some((event) => ACTION_LOCK_EVENT_TYPES.has(event.type)) ? ACTION_LOCK_MS : 0;
+}
+
+export function isVisibleUiEvent(event: UiEvent): boolean {
+  return event.type !== "matchChain";
+}
+
 function stackPitchLevel(totalDraw: number): number {
   return Math.min(4, Math.max(1, Math.floor(totalDraw / 2)));
+}
+
+function sameValuePitchLevel(prev: GameSnapshot, next: GameSnapshot): number {
+  const value = next.discardTop?.value;
+  if (value === undefined || prev.discardTop?.value !== value) {
+    return 0;
+  }
+
+  return Math.min(4, Math.max(2, sameValueRunFromLog(next, value)));
+}
+
+function sameValueRunFromLog(snapshot: GameSnapshot, value: CardValue): number {
+  let run = 0;
+
+  for (let index = snapshot.actionLog.length - 1; index >= 0; index -= 1) {
+    const playedValue = playedCardValue(snapshot.actionLog[index]?.message);
+    if (playedValue === undefined) {
+      continue;
+    }
+
+    if (playedValue !== value) {
+      break;
+    }
+
+    run += 1;
+  }
+
+  return run;
+}
+
+function playedCardValue(message?: string): CardValue | undefined {
+  const raw = message?.match(/^.+ played (?:(?:red|yellow|green|blue) )?(\d|skip|reverse|draw2|wild4|wild)\.$/)?.[1];
+  if (!raw) {
+    return undefined;
+  }
+
+  return /^\d$/.test(raw) ? Number(raw) as CardValue : raw as CardValue;
 }
