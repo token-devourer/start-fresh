@@ -357,7 +357,7 @@ function ErrorToast() {
   );
 }
 
-function Lobby({
+export function Lobby({
   snapshot,
   code,
   send

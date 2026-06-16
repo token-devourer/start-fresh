@@ -251,6 +251,19 @@ export const roomSettingsSchema = z.object({
   modeOptions: z.record(z.string(), z.unknown()).default({})
 });
 
+export const roomSettingsUpdateSchema = z.object({
+  modeId: z.literal("standard").optional(),
+  maxPlayers: z.number().int().min(2).max(10).optional(),
+  turnTimeoutSec: z.number().int().min(15).max(60).optional(),
+  scoreTarget: z.union([z.literal(0), z.literal(500), z.literal("lastStand")]).optional(),
+  allowMidGameJoin: z.boolean().optional(),
+  jumpInEnabled: z.boolean().optional(),
+  stackingEnabled: z.boolean().optional(),
+  challengeEnabled: z.boolean().optional(),
+  deckBoxes: z.number().int().min(1).max(6).optional(),
+  modeOptions: z.record(z.string(), z.unknown()).optional()
+});
+
 export const roomCodeSchema = z.string().transform(normalizeRoomCode).pipe(z.string().regex(ROOM_CODE_PATTERN));
 
 export const joinOptionsSchema = z.object({
@@ -291,11 +304,11 @@ export const emoteSchema = z.object({
 });
 
 export const createRoomRequestSchema = z.object({
-  settings: roomSettingsSchema.partial().optional()
+  settings: roomSettingsUpdateSchema.optional()
 });
 
 export function mergeRoomSettings(input?: RoomSettingsInput): RoomSettings {
-  const parsed = roomSettingsSchema.partial().parse(input ?? {});
+  const parsed = roomSettingsUpdateSchema.parse(input ?? {});
 
   return {
     modeId: parsed.modeId ?? DEFAULT_ROOM_SETTINGS.modeId,
