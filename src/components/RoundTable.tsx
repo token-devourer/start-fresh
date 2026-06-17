@@ -133,7 +133,6 @@ export function RoundTable({ snapshot, isMyTurn, canDraw, onDraw }: RoundTablePr
         <div
           className={`opponent-strip ${opponents.length > 3 ? "is-scrollable" : "is-centered"}`}
           role="list"
-          aria-label={t("board.players" as never, undefined as never) /* fallback safe label */ ?? "players"}
         >
           {opponents.map((player) => (
             <div key={player.id} role="listitem" className="opponent-strip-item">
